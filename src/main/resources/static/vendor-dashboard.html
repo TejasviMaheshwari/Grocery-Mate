@@ -1,0 +1,68 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>GroceryMate | Vendor Dashboard</title>
+    <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+    <header>
+        <h1>GroceryMate Vendor</h1>
+        <button onclick="logout()">Logout</button>
+    </header>
+
+    <main>
+        <h2>Product Management</h2>
+
+        <section class="stats">
+            <article>
+                <h3>Listed Products</h3>
+                <p id="productCount">0</p>
+            </article>
+            <article>
+                <h3>Purchase Requests</h3>
+                <p id="requestCount">0</p>
+            </article>
+        </section>
+
+        <section>
+            <h2>Add Product</h2>
+            <form id="productForm">
+                <input id="productName" placeholder="Product name" required>
+                <input id="category" placeholder="Category" required>
+                <input id="price" type="number" min="0.01"
+                       step="0.01" placeholder="Price in ₹" required>
+                <input id="stock" type="number" min="0"
+                       placeholder="Available stock" required>
+                <button type="submit">Save Product</button>
+            </form>
+            <p id="message"></p>
+        </section>
+
+        <section>
+            <h2>My Products</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th>Category</th>
+                        <th>Price</th>
+                        <th>Stock</th>
+                    </tr>
+                </thead>
+                <tbody id="productsBody"></tbody>
+            </table>
+        </section>
+
+        <section>
+            <h2>Incoming Purchase Requests</h2>
+            <ul id="requestsList"></ul>
+        </section>
+    </main>
+
+    <script src="api.js"></script>
+    <script src="vendor-dashboard.js"></script>
+</body>
+</html>

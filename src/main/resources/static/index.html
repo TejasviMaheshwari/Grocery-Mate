@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GroceryMate | Sign in & Create account</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="page-shell">
+    <section class="intro-panel">
+      <a class="brand" href="#" aria-label="GroceryMate home">
+        <span class="brand-mark">GM</span>
+        <span>Grocery<span class="brand-light">Mate</span></span>
+      </a>
+      <div class="intro-copy">
+        <p class="eyebrow">A little more organised, every day</p>
+        <h1>Your home essentials,<br><em>under control.</em></h1>
+        <p class="intro-text">Keep track of groceries, plan refills and make everyday shopping simpler for your family or your local shop.</p>
+        <div class="feature-list">
+          <div><span class="feature-icon">✓</span><span>Know what’s in stock</span></div>
+          <div><span class="feature-icon">↗</span><span>Plan the next refill</span></div>
+          <div><span class="feature-icon">₹</span><span>Keep purchase costs in view</span></div>
+        </div>
+      </div>
+      <div class="intro-bottom"><span class="leaf">✳</span> Made for everyday Indian households and neighbourhood stores.</div>
+    </section>
+
+    <section class="auth-panel">
+      <div class="auth-topline">
+        <span class="secure-note"><span class="lock">▣</span> Secure account access</span>
+        <span class="top-small">GroceryMate · India</span>
+      </div>
+
+      <div class="auth-card">
+        <div class="role-heading">
+          <p class="eyebrow">WELCOME TO GROCERYMATE</p>
+          <h2>Let’s get you started.</h2>
+          <p class="subheading">Choose how you want to use GroceryMate.</p>
+        </div>
+
+        <div class="role-switch" role="tablist" aria-label="Account type">
+          <button class="role-option active" type="button" data-role="user" role="tab" aria-selected="true">
+            <span class="role-symbol">⌂</span><span><strong>Household</strong><small>Manage home essentials</small></span>
+          </button>
+          <button class="role-option" type="button" data-role="vendor" role="tab" aria-selected="false">
+            <span class="role-symbol">▤</span><span><strong>Vendor</strong><small>Manage your shop</small></span>
+          </button>
+        </div>
+
+        <div class="auth-tabs" role="tablist" aria-label="Sign in or sign up">
+          <button type="button" class="auth-tab active" data-mode="signup" role="tab" aria-selected="true">Create account</button>
+          <button type="button" class="auth-tab" data-mode="login" role="tab" aria-selected="false">Log in</button>
+        </div>
+
+        <div id="statusMessage" class="status-message" role="status" aria-live="polite" hidden></div>
+
+        <form id="authForm" novalidate>
+          <div id="signupFields">
+            <div class="field">
+              <label for="fullName">Full name</label>
+              <input id="fullName" name="fullName" type="text" maxlength="100" autocomplete="name" placeholder="e.g. Aditi Sharma">
+              <small class="field-error" data-error-for="fullName"></small>
+            </div>
+
+            <div id="vendorFields" hidden>
+              <div class="field">
+                <label for="shopName">Shop name</label>
+                <input id="shopName" name="shopName" type="text" maxlength="150" autocomplete="organization" placeholder="e.g. Sharma General Store">
+                <small class="field-error" data-error-for="shopName"></small>
+              </div>
+            </div>
+
+            <div id="householdFields">
+              <div class="field">
+                <label for="householdName">Household name</label>
+                <input id="householdName" name="householdName" type="text" maxlength="120" placeholder="e.g. Sharma Family">
+                <small class="field-error" data-error-for="householdName"></small>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="phone">Phone number <span class="optional">(optional)</span></label>
+              <input id="phone" name="phone" type="tel" inputmode="tel" maxlength="15" autocomplete="tel" placeholder="10-digit mobile number">
+              <small class="field-error" data-error-for="phone"></small>
+            </div>
+
+            <div class="field">
+              <label for="address">Address <span class="optional">(optional)</span></label>
+              <input id="address" name="address" type="text" maxlength="255" autocomplete="street-address" placeholder="House / street / locality">
+              <small class="field-error" data-error-for="address"></small>
+            </div>
+
+            <div class="field-grid">
+              <div class="field">
+                <label for="city">City <span class="optional">(optional)</span></label>
+                <input id="city" name="city" type="text" maxlength="100" autocomplete="address-level2" placeholder="City">
+              </div>
+              <div class="field">
+                <label for="state">State <span class="optional">(optional)</span></label>
+                <input id="state" name="state" type="text" maxlength="100" autocomplete="address-level1" placeholder="State">
+              </div>
+            </div>
+            <div class="field">
+              <label for="pincode">PIN code <span class="optional">(optional)</span></label>
+              <input id="pincode" name="pincode" type="text" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="postal-code" placeholder="6-digit PIN code">
+              <small class="field-error" data-error-for="pincode"></small>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="email">Email address</label>
+            <input id="email" name="email" type="email" maxlength="254" autocomplete="email" required placeholder="you@example.com">
+            <small class="field-error" data-error-for="email"></small>
+          </div>
+
+          <div class="field">
+            <div class="label-row"><label for="password">Password</label><button type="button" class="text-button" id="togglePassword">Show</button></div>
+            <input id="password" name="password" type="password" autocomplete="new-password" minlength="8" required placeholder="At least 8 characters">
+            <small class="field-hint" id="passwordHint">Use at least 8 characters.</small>
+            <small class="field-error" data-error-for="password"></small>
+          </div>
+
+          <button id="submitButton" class="submit-button" type="submit"><span id="submitLabel">Create household account</span><span aria-hidden="true">→</span></button>
+          <p class="terms" id="termsText">By creating an account, you agree to use GroceryMate responsibly.</p>
+        </form>
+        <p class="switch-prompt"><span id="switchPromptText">Already have an account?</span> <button id="switchMode" class="text-button" type="button">Log in</button></p>
+      </div>
+      <footer class="auth-footer"><span>© 2026 GroceryMate</span><span>Simple. Thoughtful. Everyday.</span></footer>
+    </section>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>

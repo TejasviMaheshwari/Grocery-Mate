@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>GroceryMate | User Dashboard</title>
+    <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+<header>
+    <h1>GroceryMate</h1>
+    <nav>
+        <a href="#essentials">My Essentials</a>
+        <a href="#alerts">Low Stock</a>
+        <a href="#add-item">Add Item</a>
+        <button onclick="logout()">Logout</button>
+    </nav>
+</header>
+
+<main>
+    <h2 id="welcome">My Household Dashboard</h2>
+    <p>Manage household essentials and predict when they need replenishing.</p>
+
+    <section class="stats">
+        <article><h3>Tracked Essentials</h3><p id="totalItems">0</p></article>
+        <article><h3>Low Stock</h3><p id="lowItems">0</p></article>
+        <article><h3>Monthly Spending</h3><p id="monthlySpend">₹0.00</p></article>
+        <article><h3>Upcoming Purchases</h3><p id="upcomingItems">0</p></article>
+    </section>
+
+    <section id="essentials">
+        <h2>My Household Essentials</h2>
+        <p class="legend">
+            <span class="stock-dot green"></span> More than 7 days
+            <span class="stock-dot amber"></span> 4–7 days
+            <span class="stock-dot red"></span> 0–3 days
+        </p>
+        <div class="table-scroll">
+            <table>
+                <thead>
+                <tr>
+                    <th>Item</th>
+                    <th>Remaining Stock</th>
+                    <th>Estimated Duration</th>
+                    <th>Stock Status</th>
+                    <th>Purchase Date</th>
+                    <th>Last Purchase Price</th>
+                    <th>Estimated Refill</th>
+                    <th>Reminder Days</th>
+                    <th>Next Stock Check</th>
+                </tr>
+                </thead>
+                <tbody id="itemsBody">
+                    <tr><td colspan="9">Loading items...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section id="alerts">
+        <h2>Low-Stock Alerts</h2>
+        <ul id="alertsList"></ul>
+    </section>
+
+    <section id="upcoming">
+        <h2>Upcoming Purchases</h2>
+        <ul id="upcomingList"></ul>
+    </section>
+
+    <section id="add-item">
+        <h2>Add Household Essential</h2>
+        <p>Enter the item information below. Fields marked * are required.</p>
+
+        <form id="itemForm">
+            <div class="form-grid">
+                <div class="field">
+                    <label for="itemName">Item Name *</label>
+                    <input id="itemName" name="item_name" maxlength="255" required placeholder="e.g. Atta">
+                </div>
+
+                <div class="field">
+                    <label for="quantity">Remaining Quantity *</label>
+                    <input id="quantity" name="quantity_remaining" type="number" min="0" step="0.01" required placeholder="e.g. 5">
+                </div>
+
+                <div class="field">
+                    <label for="unit">Unit *</label>
+                    <select id="unit" name="unit" required>
+                        <option value="kg">Kilogram (kg)</option>
+                        <option value="g">Gram (g)</option>
+                        <option value="L">Litre (L)</option>
+                        <option value="ml">Millilitre (ml)</option>
+                        <option value="packet">Packet</option>
+                        <option value="piece">Piece</option>
+                        <option value="bottle">Bottle</option>
+                        <option value="unit">Unit</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label for="purchaseDate">Purchase Date</label>
+                    <input id="purchaseDate" name="purchase_date" type="date">
+                </div>
+
+                <div class="field">
+                    <label for="lastPrice">Last Purchase Price (₹)</label>
+                    <input id="lastPrice" name="last_purchase_price" type="number" min="0" step="0.01" placeholder="e.g. 250">
+                </div>
+
+                <div class="field">
+                    <label for="duration">Expected Duration (days) *</label>
+                    <input id="duration" name="expected_duration_days" type="number" min="1" step="1" value="30" required>
+                </div>
+
+                <div class="field">
+                    <label for="refillDate">Estimated Refill Date</label>
+                    <input id="refillDate" name="estimated_refill_date" type="date">
+                </div>
+
+                <div class="field">
+                    <label for="reminderDays">Reminder Before (days) *</label>
+                    <input id="reminderDays" name="reminder_days_before" type="number" min="0" step="1" value="3" required>
+                </div>
+
+                <div class="field">
+                    <label for="stockCheck">Next Stock Check</label>
+                    <input id="stockCheck" name="next_stock_check_at" type="datetime-local">
+                </div>
+            </div>
+
+            <!-- Dedicated container for buttons -->
+            <div class="form-actions">
+                <button type="submit">Save Item</button>
+                <button type="reset" class="secondary">Clear Form</button>
+            </div>
+        </form>
+        <p id="message" role="status" aria-live="polite"></p>
+    </section>
+</main>
+
+<script src="api.js"></script>
+<script src="user-dashboard.js"></script>
+</body>
+</html>
+
+
+<!-- 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>GroceryMate | User Dashboard</title>
+    <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+<header>
+    <h1>GroceryMate</h1>
+    <nav>
+        <a href="#essentials">My Essentials</a>
+        <a href="#alerts">Low Stock</a>
+        <a href="#add-item">Add Item</a>
+        <button onclick="logout()">Logout</button>
+    </nav>
+</header>
+
+<main>
+    <h2 id="welcome">My Household Dashboard</h2>
+    <p>Manage household essentials and predict when they need replenishing.</p>
+
+    <section class="stats">
+        <article><h3>Tracked Essentials</h3><p id="totalItems">0</p></article>
+        <article><h3>Low Stock</h3><p id="lowItems">0</p></article>
+        <article><h3>Monthly Spending</h3><p id="monthlySpend">₹0.00</p></article>
+        <article><h3>Upcoming Purchases</h3><p id="upcomingItems">0</p></article>
+    </section>
+
+    <section id="essentials">
+        <h2>My Household Essentials</h2>
+        <p class="legend">
+            <span class="stock-dot green"></span> More than 7 days
+            <span class="stock-dot amber"></span> 4–7 days
+            <span class="stock-dot red"></span> 0–3 days
+        </p>
+        <div class="table-scroll">
+            <table>
+                <thead>
+                <tr>
+                    <th>Item</th>
+                    <th>Remaining Stock</th>
+                    <th>Estimated Duration</th>
+                    <th>Stock Status</th>
+                    <th>Purchase Date</th>
+                    <th>Last Purchase Price</th>
+                    <th>Estimated Refill</th>
+                    <th>Reminder Days</th>
+                    <th>Next Stock Check</th>
+                </tr>
+                </thead>
+                <tbody id="itemsBody">
+                    <tr><td colspan="9">Loading items...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section id="alerts">
+        <h2>Low-Stock Alerts</h2>
+        <ul id="alertsList"></ul>
+    </section>
+
+    <section id="upcoming">
+        <h2>Upcoming Purchases</h2>
+        <ul id="upcomingList"></ul>
+    </section>
+
+    <section id="add-item">
+        <h2>Add Household Essential</h2>
+        <p>Enter the item information below. Fields marked * are required.</p>
+
+        <form id="itemForm">
+            <div class="form-grid">
+                <div class="field">
+                    <label for="itemName">Item Name *</label>
+                    <input id="itemName" name="item_name"
+                           maxlength="255" required placeholder="e.g. Atta">
+                </div>
+
+                <div class="field">
+                    <label for="quantity">Remaining Quantity *</label>
+                    <input id="quantity" name="quantity_remaining"
+                           type="number" min="0" step="0.01" required
+                           placeholder="e.g. 5">
+                </div>
+
+                <div class="field">
+                    <label for="unit">Unit *</label>
+                    <select id="unit" name="unit" required>
+                        <option value="kg">Kilogram (kg)</option>
+                        <option value="g">Gram (g)</option>
+                        <option value="L">Litre (L)</option>
+                        <option value="ml">Millilitre (ml)</option>
+                        <option value="packet">Packet</option>
+                        <option value="piece">Piece</option>
+                        <option value="bottle">Bottle</option>
+                        <option value="unit">Unit</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label for="purchaseDate">Purchase Date</label>
+                    <input id="purchaseDate" name="purchase_date" type="date">
+                </div>
+
+                <div class="field">
+                    <label for="lastPrice">Last Purchase Price (₹)</label>
+                    <input id="lastPrice" name="last_purchase_price"
+                           type="number" min="0" step="0.01"
+                           placeholder="e.g. 250">
+                </div>
+
+                <div class="field">
+                    <label for="duration">Expected Duration (days) *</label>
+                    <input id="duration" name="expected_duration_days"
+                           type="number" min="1" step="1" value="30" required>
+                </div>
+
+                <div class="field">
+                    <label for="refillDate">Estimated Refill Date</label>
+                    <input id="refillDate" name="estimated_refill_date"
+                           type="date">
+                </div>
+
+                <div class="field">
+                    <label for="reminderDays">Reminder Before (days) *</label>
+                    <input id="reminderDays" name="reminder_days_before"
+                           type="number" min="0" step="1" value="3" required>
+                </div>
+
+                <div class="field">
+                    <label for="stockCheck">Next Stock Check</label>
+                    <input id="stockCheck" name="next_stock_check_at"
+                           type="datetime-local">
+                </div>
+            </div>
+
+            <button type="submit">Save Item</button>
+            <button type="reset" class="secondary">Clear Form</button>
+        </form>
+        <p id="message" role="status" aria-live="polite"></p>
+    </section>
+</main>
+
+<script src="api.js"></script>
+<script src="user-dashboard.js"></script>
+</body>
+</html> -->
