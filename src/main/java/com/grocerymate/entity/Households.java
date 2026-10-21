@@ -40,8 +40,8 @@ public class Households {
     @Column(name = "updated_at", nullable = false)
     private java.time.LocalDateTime updatedAt;
 
-    @Column(name = "ON")
-    private String on;
+//    @Column(name = "ON")
+//    private String on;
 
     public Households() {}
 
@@ -75,7 +75,7 @@ public class Households {
     public java.time.LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(java.time.LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 
-    public String getOn() { return on; }
-    public void setOn(String on) { this.on = on; }
+//    public String getOn() { return on; }
+//    public void setOn(String on) { this.on = on; }
 
 }

@@ -34,8 +34,8 @@ public class Reminders {
     @Column(name = "created_at", nullable = false)
     private java.time.LocalDateTime createdAt;
 
-    @Column(name = "ON")
-    private String on;
+//    @Column(name = "ON")
+//    private String on;
 
 
     public Reminders() {}
@@ -64,8 +64,8 @@ public class Reminders {
     public java.time.LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(java.time.LocalDateTime createdAt) { this.createdAt = createdAt; }
 
-    public String getOn() { return on; }
-    public void setOn(String on) { this.on = on; }
+//    public String getOn() { return on; }
+//    public void setOn(String on) { this.on = on; }
 
 
 }

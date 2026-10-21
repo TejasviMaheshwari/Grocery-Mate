@@ -37,8 +37,8 @@ public class StockCheckins {
     @Column(name = "notes")
     private String notes;
 
-    @Column(name = "ON")
-    private String on;
+//    @Column(name = "ON")
+//    private String on;
 
 
     public StockCheckins() {}
@@ -70,7 +70,7 @@ public class StockCheckins {
     public String getNotes() { return notes; }
     public void setNotes(String notes) { this.notes = notes; }
 
-    public String getOn() { return on; }
-    public void setOn(String on) { this.on = on; }
+//    public String getOn() { return on; }
+//    public void setOn(String on) { this.on = on; }
 
 }

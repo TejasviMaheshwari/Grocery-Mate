@@ -37,8 +37,8 @@ public class Notifications {
     @Column(name = "created_at", nullable = false)
     private java.time.LocalDateTime createdAt;
 
-    @Column(name = "ON")
-    private String on;
+//    @Column(name = "ON")
+//    private String on;
 
     public Notifications() {
     }
@@ -115,12 +115,8 @@ public class Notifications {
         this.createdAt = createdAt;
     }
 
-    public String getOn() {
-        return on;
-    }
+//    public String getOn() {return on;}
 
-    public void setOn(String on) {
-        this.on = on;
-    }
+//    public void setOn(String on) {this.on = on;}
+
 }
-

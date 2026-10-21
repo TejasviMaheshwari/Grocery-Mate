@@ -49,8 +49,8 @@ public class VendorOrders {
     @Column(name = "notes")
     private String notes;
 
-    @Column(name = "ON")
-    private String on;
+//    @Column(name = "ON")
+//    private String on;
 
     public VendorOrders() {}
 
@@ -93,7 +93,7 @@ public class VendorOrders {
     public String getNotes() { return notes; }
     public void setNotes(String notes) { this.notes = notes; }
 
-    public String getOn() { return on; }
-    public void setOn(String on) { this.on = on; }
+//    public String getOn() { return on; }
+//    public void setOn(String on) { this.on = on; }
 
 }

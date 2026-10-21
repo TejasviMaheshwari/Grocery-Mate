@@ -118,7 +118,9 @@ public class ItemDto {
     public void setNextStockCheckAt(LocalDateTime nextStockCheckAt) {
         this.nextStockCheckAt = nextStockCheckAt;
     }
-}//
+}
+
+
 //package com.grocerymate.dto;
 //
 //import com.fasterxml.jackson.annotation.JsonProperty;

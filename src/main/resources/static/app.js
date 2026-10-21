@@ -18,6 +18,23 @@ const ENDPOINTS = {
   login: `${API_BASE}/api/auth/login`
 };
 
+async function getCsrfToken() {
+  const response = await fetch(`${API_BASE}/api/csrf`, {
+    method: "GET",
+    credentials: "same-origin",
+    headers: {
+      "Accept": "application/json"
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error(`Could not obtain CSRF token (${response.status}).`);
+  }
+
+  const data = await response.json();
+  return data.token;
+}
+
 
 
 const form = document.getElementById("authForm");
@@ -175,14 +192,27 @@ form.addEventListener("submit", async event => {
     } else {
       url = ENDPOINTS.login;
       // Backend should determine role from its own stored account/profile data.
-      payload = { email: value("email").toLowerCase(), password: password.value };
+      payload = {
+        email: value("email").toLowerCase(),
+        password: password.value,
+        role: currentRole
+      };
     }
+
+    
+    const csrfToken = await getCsrfToken();
 
     const response = await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json", "Accept": "application/json" },
+      credentials: "same-origin",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "X-XSRF-TOKEN": csrfToken
+      },
       body: JSON.stringify(payload)
     });
+
     const data = await readResponse(response);
 
     if (!response.ok) {
@@ -199,45 +229,42 @@ form.addEventListener("submit", async event => {
       password.value = "";
       // Keep email filled to make the next step easy.
     } else {
-      if (data.householdId) {
-        localStorage.setItem("grocerymate_household_id", data.householdId);
+      // Save the account details returned by the backend.
+      if (data.householdId != null) {
+        localStorage.setItem(
+          "grocerymate_household_id",
+          String(data.householdId)
+        );
       }
-      showStatus(data.message || "Login successful.", "success");
-      /*
-       * Adapt this section to your backend's auth strategy:
-       * - For cookie/session auth, let the server set an HttpOnly cookie.
-       * - For token auth, use a secure design; avoid storing sensitive tokens in localStorage.
-       * The backend response may return a role or redirect path; do not trust a client-side role
-       * selector as authorization.
-       */ 
-    // Save auth token and role required by the dashboards
+
+      if (data.userId != null) {
+        localStorage.setItem("grocerymate_user_id", String(data.userId));
+      }
+
+      if (data.vendorId != null) {
+        localStorage.setItem("grocerymate_vendor_id", String(data.vendorId));
+      }
+
+      const role = String(data.role || currentRole).toUpperCase();
+      localStorage.setItem("grocerymate_role", role);
+
+      // Your current backend does not return a token.
       if (data.token) {
         localStorage.setItem("grocerymate_token", data.token);
       } else {
-        // Fallback so it doesn't immediately bounce if your backend doesn't return a token yet
-        localStorage.setItem("grocerymate_token", "dummy_session_token");
+        localStorage.removeItem("grocerymate_token");
       }
 
-      const role = (data.role || currentRole).toUpperCase();
-      localStorage.setItem("grocerymate_role", role);
+      showStatus(data.message || "Login successful.", "success");
 
-      if (data.redirectUrl) {
-        window.location.assign(data.redirectUrl);
-      } else if (role === "VENDOR") {
-        window.location.href = "vendor-dashboard.html";
+      if (role === "VENDOR") {
+        window.location.assign("vendor-dashboard.html");
+      } else if (role === "USER") {
+        window.location.assign("user-dashboard.html");
       } else {
-        window.location.href = "user-dashboard.html";
+        showStatus("Login succeeded, but the account role is unrecognized.", "error");
       }
-    //   if (data.redirectUrl) {
-    //     window.location.assign(data.redirectUrl);
-    //   } else if (data.role === "VENDOR") {
-    //     window.location.href = "vendor-dashboard.html";
-    //     showStatus(data.message || "Login successful. Vendor dashboard can be connected next.", "success");
-    //   } else if (data.role === "USER" || data.role === "HOUSEHOLD") {
-    //     window.location.href = "user-dashboard.html";
-    //     showStatus(data.message || "Login successful. Household dashboard can be connected next.", "success");
-    //   }
-    // }
+    
     }
   } catch (error) {
     showStatus(`Could not connect to the Java backend at ${API_BASE}. Start Spring Boot and check the endpoint/CORS settings.`, "error");

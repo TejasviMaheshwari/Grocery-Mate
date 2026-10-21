@@ -1,6 +1,7 @@
 const ITEMS_API = "/household/items";
 const SPENDING_API = "/household/spending/monthly";
 const UPCOMING_API = "/household/purchases/upcoming";
+const PREDICTION_API = "/household/items";
 
 function getField(item, snake, camel, fallback = null) {
     return item[snake] ?? item[camel] ?? fallback;
@@ -23,38 +24,132 @@ function money(amount) {
     return "₹" + num.toFixed(2);
 }
 
-function getStockInfo(item) {
-    const quantity = Number(getField(item, "quantity_remaining", "quantityRemaining", 0));
-    const duration = Number(getField(item, "expected_duration_days", "expectedDurationDays", 30));
-    const purchaseDate = getField(item, "purchase_date", "purchaseDate");
+async function loadPredictions(items) {
+    const results = {};
+
+    await Promise.all(items.map(async (item) => {
+        const itemId = getField(item, "item_id", "itemId");
+
+        if (itemId == null) return;
+
+        try {
+            results[itemId] = await apiRequest(
+                `${PREDICTION_API}/${itemId}/prediction`
+            );
+        } catch (error) {
+            console.error(
+                `Prediction unavailable for item ${itemId}:`,
+                error
+            );
+
+            results[itemId] = null;
+        }
+    }));
+
+    return results;
+}
+
+function getStockInfo(item, prediction) {
+    const quantity = Number(
+        getField(item, "quantity_remaining", "quantityRemaining", 0)
+    );
 
     if (quantity <= 0) {
-        return { days: 0, label: "Out of stock", color: "red" };
+        return {
+            days: 0,
+            label: "Out of stock",
+            color: "red",
+            refillDate: null,
+            dailyUsage: null
+        };
     }
 
-    let daysRemaining = duration;
-
-    if (purchaseDate) {
-        const purchased = new Date(`${purchaseDate}T00:00:00`);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        if (!Number.isNaN(purchased.getTime())) {
-            const elapsed = Math.max(0, Math.floor((today - purchased) / 86400000));
-            daysRemaining = Math.max(0, duration - elapsed);
-        }
+    if (!prediction) {
+        return {
+            days: null,
+            label: "Prediction unavailable",
+            color: "amber",
+            refillDate: null,
+            dailyUsage: null
+        };
     }
 
-    if (daysRemaining <= 3) {
-        return { days: daysRemaining, label: `Critical · ${daysRemaining} day(s)`, color: "red" };
+    if (prediction.enoughData !== true) {
+        return {
+            days: null,
+            label: "Collecting usage data",
+            color: "amber",
+            refillDate: null,
+            dailyUsage: null
+        };
     }
 
-    if (daysRemaining <= 7) {
-        return { days: daysRemaining, label: `Low · ${daysRemaining} days`, color: "amber" };
+    const days = prediction.estimatedDaysRemaining;
+    const refillDate = prediction.predictedRefillDate;
+    const dailyUsage = prediction.averageDailyConsumption;
+
+    if (prediction.stockStatus === "OUT_OF_STOCK") {
+        return {
+            days: 0,
+            label: "Out of stock",
+            color: "red",
+            refillDate,
+            dailyUsage
+        };
     }
 
-    return { days: daysRemaining, label: `Good · ${daysRemaining} days`, color: "green" };
+    if (prediction.stockStatus === "LOW_STOCK") {
+        return {
+            days,
+            label: `Low · ${days} day(s)`,
+            color: "red",
+            refillDate,
+            dailyUsage
+        };
+    }
+
+    return {
+        days,
+        label: `Good · ${days} day(s)`,
+        color: "green",
+        refillDate,
+        dailyUsage
+    };
 }
+
+
+// function getStockInfo(item) {
+//     const quantity = Number(getField(item, "quantity_remaining", "quantityRemaining", 0));
+//     const duration = Number(getField(item, "expected_duration_days", "expectedDurationDays", 30));
+//     const purchaseDate = getField(item, "purchase_date", "purchaseDate");
+
+//     if (quantity <= 0) {
+//         return { days: 0, label: "Out of stock", color: "red" };
+//     }
+
+//     let daysRemaining = duration;
+
+//     if (purchaseDate) {
+//         const purchased = new Date(`${purchaseDate}T00:00:00`);
+//         const today = new Date();
+//         today.setHours(0, 0, 0, 0);
+
+//         if (!Number.isNaN(purchased.getTime())) {
+//             const elapsed = Math.max(0, Math.floor((today - purchased) / 86400000));
+//             daysRemaining = Math.max(0, duration - elapsed);
+//         }
+//     }
+
+//     if (daysRemaining <= 3) {
+//         return { days: daysRemaining, label: `Critical · ${daysRemaining} day(s)`, color: "red" };
+//     }
+
+//     if (daysRemaining <= 7) {
+//         return { days: daysRemaining, label: `Low · ${daysRemaining} days`, color: "amber" };
+//     }
+
+//     return { days: daysRemaining, label: `Good · ${daysRemaining} days`, color: "green" };
+// }
 
 function addCell(row, value) {
     const cell = document.createElement("td");
@@ -63,7 +158,52 @@ function addCell(row, value) {
     return cell;
 }
 
-function renderItems(items) {
+async function updateStock(itemId, action, itemName) {
+    const actionLabel = action === "CONSUME" ? "consume" : "replenish";
+
+    const input = window.prompt(
+        `How much ${itemName} would you like to ${actionLabel}? Enter quantity:`
+    );
+
+    // Cancelled by the user.
+    if (input === null) return;
+
+    const quantity = Number(input);
+
+    if (!input.trim() || !Number.isFinite(quantity) || quantity <= 0) {
+        showMessage("Please enter a valid quantity greater than zero.");
+        return;
+    }
+
+    try {
+        const result = await apiRequest(
+            `${ITEMS_API}/${itemId}/stock`,
+            {
+                method: "POST",
+                body: JSON.stringify({
+                    action: action,
+                    quantity: quantity
+                })
+            }
+        );
+
+        // Reload items, spending, alerts and upcoming purchases.
+        await loadDashboard();
+
+        const remaining = Number(result.quantityRemaining);
+        const unit = result.unit || "";
+
+        showMessage(
+            `${itemName}: stock updated successfully. ` +
+            `Remaining: ${remaining} ${unit}.`,
+            true
+        );
+    } catch (error) {
+        showMessage("Could not update stock: " + error.message);
+    }
+}
+
+function renderItems(items, predictions = {}) {
     const body = document.getElementById("itemsBody");
     const alerts = document.getElementById("alertsList");
 
@@ -82,18 +222,30 @@ function renderItems(items) {
         return;
     }
 
-    items.forEach(item => {
+    // items.forEach(item => {
+    items.forEach((item, index) => {
         const name = getField(item, "item_name", "itemName", "Unnamed item");
         const quantity = Number(getField(item, "quantity_remaining", "quantityRemaining", 0));
         const unit = getField(item, "unit", "unit", "");
-        const duration = getStockInfo(item);
+        const itemId = getField(item, "item_id", "itemId");
+        const prediction = predictions[itemId];
+        const duration = getStockInfo(item, prediction);
+        // const duration = getStockInfo(item);
 
         const row = document.createElement("tr");
         row.className = `stock-row-${duration.color}`;
 
         addCell(row, name);
         addCell(row, `${quantity} ${unit}`.trim());
-        addCell(row, quantity <= 0 ? "Finished" : `${duration.days} day(s)`);
+        addCell(
+            row,
+            quantity <= 0
+                ? "Finished"
+                : duration.days == null
+                    ? duration.label
+                    : `${duration.days} day(s)`
+        );
+        // addCell(row, quantity <= 0 ? "Finished" : `${duration.days} day(s)`);
 
         const statusCell = document.createElement("td");
         const badge = document.createElement("span");
@@ -106,20 +258,85 @@ function renderItems(items) {
 
         const price = getField(item, "last_purchase_price", "lastPurchasePrice");
         addCell(row, price == null ? "—" : money(price));
+                addCell(
+            row,
+            duration.refillDate ||
+            getField(item, "estimated_refill_date", "estimatedRefillDate", "—")
+        );
+        // addCell(row, getField(item, "estimated_refill_date", "estimatedRefillDate", "—"));
 
-        addCell(row, getField(item, "estimated_refill_date", "estimatedRefillDate", "—"));
         addCell(row, getField(item, "reminder_days_before", "reminderDaysBefore", 3));
-        addCell(row, formatDate(getField(item, "next_stock_check_at", "nextStockCheckAt")));
+        
+        addCell(
+            row,
+            formatDate(getField(item, "next_stock_check_at", "nextStockCheckAt"))
+        );
+
+        // Actions column
+        const actionsCell = document.createElement("td");
+
+        const consumeButton = document.createElement("button");
+        consumeButton.type = "button";
+        consumeButton.textContent = "Consume";
+        consumeButton.addEventListener("click", () => {
+            if (itemId != null) {
+                updateStock(itemId, "CONSUME", name);
+            } else {
+                showMessage("Cannot update stock: item ID is missing.");
+            }
+        });
+
+        const replenishButton = document.createElement("button");
+        replenishButton.type = "button";
+        replenishButton.textContent = "Replenish";
+        replenishButton.className = "secondary";
+        replenishButton.addEventListener("click", () => {
+            if (itemId != null) {
+                updateStock(itemId, "REPLENISH", name);
+            } else {
+                showMessage("Cannot update stock: item ID is missing.");
+            }
+        });
+
+        actionsCell.append(consumeButton, replenishButton);
+        row.appendChild(actionsCell);
 
         body.appendChild(row);
 
-        if (duration.color !== "green") {
+        if (duration.color === "red") {
             lowCount++;
+
             const alert = document.createElement("li");
-            alert.className = duration.color === "red" ? "critical" : "";
-            alert.textContent = `${name}: ${quantity} ${unit} remaining — ${duration.label}`;
+            alert.className = "critical";
+            alert.textContent =
+                `${name}: ${quantity} ${unit} remaining — ${duration.label}`;
+
+            alerts.appendChild(alert);
+        } else if (duration.color === "amber") {
+            const alert = document.createElement("li");
+            alert.textContent =
+                `${name}: ${quantity} ${unit} remaining — ${duration.label}`;
+
             alerts.appendChild(alert);
         }
+
+        if (index === items.length - 1 && alerts.children.length === 0) {
+            const alert = document.createElement("li");
+            alert.textContent = "No low-stock alerts.";
+            alerts.appendChild(alert);
+        }
+
+        // if (duration.color !== "green") {
+        //     const alert = document.createElement("li");
+        //     alert.className = duration.color === "red" ? "critical" : "";
+        //     alert.textContent =
+        //         `${name}: ${quantity} ${unit} remaining — ${duration.label}`;
+        //     alerts.appendChild(alert);
+        // }
+
+        // if (duration.color === "red") {
+        //     lowCount++;
+        // }
     });
 
     if (!lowCount) {
@@ -157,19 +374,36 @@ function renderUpcoming(data) {
 }
 
 async function loadDashboard() {
-    const token = localStorage.getItem("grocerymate_token");
+    
     const role = localStorage.getItem("grocerymate_role");
     const householdId = localStorage.getItem("grocerymate_household_id");
+    const userId = localStorage.getItem("grocerymate_user_id");
 
-    if (!token) {
-        window.location.href = "index.html";
+    // Require the account details returned by the successful login.
+    if (!userId || !householdId || !role) {
+        window.location.replace("index.html");
         return;
     }
 
-    if (role && role.toUpperCase() !== "USER") {
-        window.location.href = "vendor-dashboard.html";
+    if (role.toUpperCase() !== "USER") {
+        window.location.replace("index.html");
         return;
     }
+
+    
+    // const token = localStorage.getItem("grocerymate_token");
+    // const role = localStorage.getItem("grocerymate_role");
+    // const householdId = localStorage.getItem("grocerymate_household_id");
+
+    // if (!token) {
+    //     window.location.href = "index.html";
+    //     return;
+    // }
+
+    // if (role && role.toUpperCase() !== "USER") {
+    //     window.location.href = "vendor-dashboard.html";
+    //     return;
+    // }
 
     const queryParam = householdId ? `?householdId=${householdId}` : "";
 
@@ -180,8 +414,15 @@ async function loadDashboard() {
             apiRequest(`${UPCOMING_API}${queryParam}`)
         ]);
 
-        const items = Array.isArray(itemsResponse) ? itemsResponse : (itemsResponse?.items || []);
-        renderItems(items);
+        const items = Array.isArray(itemsResponse)
+            ? itemsResponse
+            : (itemsResponse?.items || []);
+
+        const predictions = await loadPredictions(items);
+
+        renderItems(items, predictions);
+        // const items = Array.isArray(itemsResponse) ? itemsResponse : (itemsResponse?.items || []);
+        // renderItems(items);
 
         const spending = typeof spendingResponse === "number"
             ? spendingResponse
@@ -233,6 +474,9 @@ document.getElementById("itemForm").addEventListener("submit", async function(ev
 });
 
 loadDashboard();
+
+
+
 // const ITEMS_API = "/household/items";
 // const SPENDING_API = "/household/spending/monthly";
 // const UPCOMING_API = "/household/purchases/upcoming";

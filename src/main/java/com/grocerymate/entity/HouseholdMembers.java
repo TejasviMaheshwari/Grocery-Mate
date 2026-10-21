@@ -25,8 +25,8 @@ public class HouseholdMembers {
     @Column(name = "joined_at", nullable = false)
     private java.time.LocalDateTime joinedAt;
 
-    @Column(name = "ON")
-    private String on;
+//    @Column(name = "ON")
+//    private String on;
 
 
     public HouseholdMembers() {}
@@ -46,8 +46,8 @@ public class HouseholdMembers {
     public java.time.LocalDateTime getJoinedAt() { return joinedAt; }
     public void setJoinedAt(java.time.LocalDateTime joinedAt) { this.joinedAt = joinedAt; }
 
-    public String getOn() { return on; }
-    public void setOn(String on) { this.on = on; }
+//    public String getOn() { return on; }
+//    public void setOn(String on) { this.on = on; }
 
 
 

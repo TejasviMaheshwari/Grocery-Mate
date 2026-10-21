@@ -43,8 +43,8 @@ public class PurchaseHistory {
     @Column(name = "created_at", nullable = false)
     private java.time.LocalDateTime createdAt;
 
-    @Column(name = "ON")
-    private String on;
+//    @Column(name = "ON")
+//    private String on;
 
 
     public PurchaseHistory() {
@@ -138,11 +138,6 @@ public class PurchaseHistory {
         this.createdAt = createdAt;
     }
 
-    public String getOn() {
-        return on;
-    }
-
-    public void setOn(String on) {
-        this.on = on;
-    }
+//    public String getOn() {return on;}
+//    public void setOn(String on) {this.on = on;}
 }
