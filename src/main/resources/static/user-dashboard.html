@@ -9,12 +9,55 @@
 <body>
 <header>
     <h1>GroceryMate</h1>
-    <nav>
+    
+    <nav class="dashboard-nav">
+        <a href="#essentials">My Essentials</a>
+        <a href="#alerts">Low Stock</a>
+        <a href="#add-item">Add Item</a>
+
+        <div class="notification-area">
+            <button
+                type="button"
+                id="notificationBell"
+                class="notification-bell"
+                aria-label="Notifications, 0 unread"
+                aria-expanded="false"
+                aria-controls="notificationPanel">
+                <span aria-hidden="true">♧</span>
+                <span id="notificationBadge" class="notification-badge" hidden>0</span>
+            </button>
+
+            <section
+                id="notificationPanel"
+                class="notification-panel"
+                aria-label="Notifications"
+                hidden>
+                <div class="notification-panel-header">
+                    <h2>Notifications</h2>
+                    <button
+                        type="button"
+                        id="markAllNotificationsRead"
+                        class="notification-text-button">
+                        Mark all read
+                    </button>
+                </div>
+
+                <p id="notificationStatus" role="status" aria-live="polite"></p>
+                <ul id="notificationList" class="notification-list">
+                    <li>Loading notifications...</li>
+                </ul>
+            </section>
+        </div>
+
+        <button type="button" onclick="logout()">Logout</button>
+    </nav>
+
+    <!-- <nav>
         <a href="#essentials">My Essentials</a>
         <a href="#alerts">Low Stock</a>
         <a href="#add-item">Add Item</a>
         <button onclick="logout()">Logout</button>
-    </nav>
+    </nav> -->
 </header>
 
 <main>
@@ -35,6 +78,7 @@
             <span class="stock-dot amber"></span> 4–7 days
             <span class="stock-dot red"></span> 0–3 days
         </p>
+        
         <div class="table-scroll">
             <table>
                 <thead>
@@ -43,8 +87,10 @@
                     <th>Remaining Stock</th>
                     <th>Estimated Duration</th>
                     <th>Stock Status</th>
-                    <th>Purchase Date</th>
-                    <th>Last Purchase Price</th>
+                    <th>Last Purchase Date</th>
+                    <th>Last Quantity Purchased</th>
+                    <th>Price per Unit</th>
+                    <th>Last Purchase Total</th>
                     <th>Estimated Refill</th>
                     <th>Reminder Days</th>
                     <th>Next Stock Check</th>
@@ -52,10 +98,13 @@
                 </tr>
                 </thead>
                 <tbody id="itemsBody">
-                    <tr><td colspan="10">Loading items...</td></tr>
+                    <tr>
+                        <td colspan="12">Loading items...</td>
+                    </tr>
                 </tbody>
             </table>
         </div>
+
     </section>
 
     <section id="alerts">
@@ -80,8 +129,27 @@
                 </div>
 
                 <div class="field">
-                    <label for="quantity">Remaining Quantity *</label>
-                    <input id="quantity" name="quantity_remaining" type="number" min="0" step="0.01" required placeholder="e.g. 5">
+                    <label for="quantity">Quantity Purchased *</label>
+                    <input id="quantity"
+                        name="quantity_purchased"
+                        type="number"
+                        min="0.01"
+                        step="0.01"
+                        required
+                        placeholder="e.g. 10">
+                </div>
+                
+                <div class="field">
+                    <label for="lowStockThreshold">Low-Stock Threshold</label>
+                    <input
+                        id="lowStockThreshold"
+                        name="low_stock_threshold"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        placeholder="e.g. 2">
+                    <small>Alert when remaining stock reaches this quantity.
+                    Leave blank to use prediction-based alerts only.</small>
                 </div>
 
                 <div class="field">
@@ -99,13 +167,19 @@
                 </div>
 
                 <div class="field">
-                    <label for="purchaseDate">Purchase Date</label>
-                    <input id="purchaseDate" name="purchase_date" type="date">
+                    <label for="purchaseDate">Purchase Date *</label>
+                    <input id="purchaseDate" name="purchase_date" type="date" required>
                 </div>
 
                 <div class="field">
-                    <label for="lastPrice">Last Purchase Price (₹)</label>
-                    <input id="lastPrice" name="last_purchase_price" type="number" min="0" step="0.01" placeholder="e.g. 250">
+                    <label for="totalPurchaseCost">Total Purchase Cost (₹) *</label>
+                    <input id="totalPurchaseCost"
+                        name="total_purchase_cost"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        required
+                        placeholder="e.g. 600">
                 </div>
 
                 <div class="field">

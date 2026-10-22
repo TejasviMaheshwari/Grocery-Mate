@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-
 public class ItemDto {
 
     @JsonProperty("household_id")
@@ -13,8 +12,8 @@ public class ItemDto {
     @JsonProperty("item_name")
     private String itemName;
 
-    @JsonProperty("quantity_remaining")
-    private BigDecimal quantityRemaining;
+    @JsonProperty("quantity_purchased")
+    private BigDecimal quantityPurchased;
 
     @JsonProperty("unit")
     private String unit;
@@ -22,8 +21,8 @@ public class ItemDto {
     @JsonProperty("purchase_date")
     private LocalDate purchaseDate;
 
-    @JsonProperty("last_purchase_price")
-    private BigDecimal lastPurchasePrice;
+    @JsonProperty("total_purchase_cost")
+    private BigDecimal totalPurchaseCost;
 
     @JsonProperty("expected_duration_days")
     private Integer expectedDurationDays = 30;
@@ -55,12 +54,12 @@ public class ItemDto {
         this.itemName = itemName;
     }
 
-    public BigDecimal getQuantityRemaining() {
-        return quantityRemaining;
+    public BigDecimal getQuantityPurchased() {
+        return quantityPurchased;
     }
 
-    public void setQuantityRemaining(BigDecimal quantityRemaining) {
-        this.quantityRemaining = quantityRemaining;
+    public void setQuantityPurchased(BigDecimal quantityPurchased) {
+        this.quantityPurchased = quantityPurchased;
     }
 
     public String getUnit() {
@@ -79,12 +78,12 @@ public class ItemDto {
         this.purchaseDate = purchaseDate;
     }
 
-    public BigDecimal getLastPurchasePrice() {
-        return lastPurchasePrice;
+    public BigDecimal getTotalPurchaseCost() {
+        return totalPurchaseCost;
     }
 
-    public void setLastPurchasePrice(BigDecimal lastPurchasePrice) {
-        this.lastPurchasePrice = lastPurchasePrice;
+    public void setTotalPurchaseCost(BigDecimal totalPurchaseCost) {
+        this.totalPurchaseCost = totalPurchaseCost;
     }
 
     public Integer getExpectedDurationDays() {
@@ -118,116 +117,19 @@ public class ItemDto {
     public void setNextStockCheckAt(LocalDateTime nextStockCheckAt) {
         this.nextStockCheckAt = nextStockCheckAt;
     }
+
+
+    @JsonProperty("low_stock_threshold")
+    private BigDecimal lowStockThreshold;
+
+    public BigDecimal getLowStockThreshold() {
+        return lowStockThreshold;
+    }
+
+    public void setLowStockThreshold(BigDecimal lowStockThreshold) {
+        this.lowStockThreshold = lowStockThreshold;
+    }
+
+
+
 }
-
-
-//package com.grocerymate.dto;
-//
-//import com.fasterxml.jackson.annotation.JsonProperty;
-//import java.math.BigDecimal;
-//import java.time.LocalDate;
-//import java.time.LocalDateTime;
-//
-//public class ItemDto {
-//
-//    @JsonProperty("item_name")
-//    private String itemName;
-//
-//    @JsonProperty("quantity_remaining")
-//    private BigDecimal quantityRemaining;
-//
-//    @JsonProperty("unit")
-//    private String unit;
-//
-//    @JsonProperty("purchase_date")
-//    private LocalDate purchaseDate;
-//
-//    @JsonProperty("last_purchase_price")
-//    private BigDecimal lastPurchasePrice;
-//
-//    @JsonProperty("expected_duration_days")
-//    private Integer expectedDurationDays = 30;
-//
-//    @JsonProperty("estimated_refill_date")
-//    private LocalDate estimatedRefillDate;
-//
-//    @JsonProperty("reminder_days_before")
-//    private Integer reminderDaysBefore = 3;
-//
-//    @JsonProperty("next_stock_check_at")
-//    private LocalDateTime nextStockCheckAt;
-//
-//    public ItemDto() {}
-//
-//    public String getItemName() {
-//        return itemName;
-//    }
-//
-//    public void setItemName(String itemName) {
-//        this.itemName = itemName;
-//    }
-//
-//    public BigDecimal getQuantityRemaining() {
-//        return quantityRemaining;
-//    }
-//
-//    public void setQuantityRemaining(BigDecimal quantityRemaining) {
-//        this.quantityRemaining = quantityRemaining;
-//    }
-//
-//    public String getUnit() {
-//        return unit;
-//    }
-//
-//    public void setUnit(String unit) {
-//        this.unit = unit;
-//    }
-//
-//    public LocalDate getPurchaseDate() {
-//        return purchaseDate;
-//    }
-//
-//    public void setPurchaseDate(LocalDate purchaseDate) {
-//        this.purchaseDate = purchaseDate;
-//    }
-//
-//    public BigDecimal getLastPurchasePrice() {
-//        return lastPurchasePrice;
-//    }
-//
-//    public void setLastPurchasePrice(BigDecimal lastPurchasePrice) {
-//        this.lastPurchasePrice = lastPurchasePrice;
-//    }
-//
-//    public Integer getExpectedDurationDays() {
-//        return expectedDurationDays;
-//    }
-//
-//    public void setExpectedDurationDays(Integer expectedDurationDays) {
-//        this.expectedDurationDays = expectedDurationDays;
-//    }
-//
-//    public LocalDate getEstimatedRefillDate() {
-//        return estimatedRefillDate;
-//    }
-//
-//    public void setEstimatedRefillDate(LocalDate estimatedRefillDate) {
-//        this.estimatedRefillDate = estimatedRefillDate;
-//    }
-//
-//    public Integer getReminderDaysBefore() {
-//        return reminderDaysBefore;
-//    }
-//
-//    public void setReminderDaysBefore(Integer reminderDaysBefore) {
-//        this.reminderDaysBefore = reminderDaysBefore;
-//    }
-//
-//    public LocalDateTime getNextStockCheckAt() {
-//        return nextStockCheckAt;
-//    }
-//
-//    public void setNextStockCheckAt(LocalDateTime nextStockCheckAt) {
-//        this.nextStockCheckAt = nextStockCheckAt;
-//    }
-//}

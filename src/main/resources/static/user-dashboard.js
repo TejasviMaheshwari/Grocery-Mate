@@ -117,40 +117,6 @@ function getStockInfo(item, prediction) {
     };
 }
 
-
-// function getStockInfo(item) {
-//     const quantity = Number(getField(item, "quantity_remaining", "quantityRemaining", 0));
-//     const duration = Number(getField(item, "expected_duration_days", "expectedDurationDays", 30));
-//     const purchaseDate = getField(item, "purchase_date", "purchaseDate");
-
-//     if (quantity <= 0) {
-//         return { days: 0, label: "Out of stock", color: "red" };
-//     }
-
-//     let daysRemaining = duration;
-
-//     if (purchaseDate) {
-//         const purchased = new Date(`${purchaseDate}T00:00:00`);
-//         const today = new Date();
-//         today.setHours(0, 0, 0, 0);
-
-//         if (!Number.isNaN(purchased.getTime())) {
-//             const elapsed = Math.max(0, Math.floor((today - purchased) / 86400000));
-//             daysRemaining = Math.max(0, duration - elapsed);
-//         }
-//     }
-
-//     if (daysRemaining <= 3) {
-//         return { days: daysRemaining, label: `Critical · ${daysRemaining} day(s)`, color: "red" };
-//     }
-
-//     if (daysRemaining <= 7) {
-//         return { days: daysRemaining, label: `Low · ${daysRemaining} days`, color: "amber" };
-//     }
-
-//     return { days: daysRemaining, label: `Good · ${daysRemaining} days`, color: "green" };
-// }
-
 function addCell(row, value) {
     const cell = document.createElement("td");
     cell.textContent = value ?? "—";
@@ -215,28 +181,66 @@ function renderItems(items, predictions = {}) {
     if (!items.length) {
         const row = document.createElement("tr");
         addCell(row, "No household essentials added yet.");
-        row.firstElementChild.colSpan = 9;
+        row.firstElementChild.colSpan = 12;
         body.appendChild(row);
+
         document.getElementById("totalItems").textContent = "0";
         document.getElementById("lowItems").textContent = "0";
+
+        const alert = document.createElement("li");
+        alert.textContent = "No household essentials to monitor.";
+        alerts.appendChild(alert);
+
         return;
     }
 
-    // items.forEach(item => {
-    items.forEach((item, index) => {
-        const name = getField(item, "item_name", "itemName", "Unnamed item");
-        const quantity = Number(getField(item, "quantity_remaining", "quantityRemaining", 0));
+    items.forEach((item) => {
+        const name = getField(
+            item, "item_name", "itemName", "Unnamed item"
+        );
+
+        const quantity = Number(
+            getField(item, "quantity_remaining", "quantityRemaining", 0)
+        );
+
         const unit = getField(item, "unit", "unit", "");
         const itemId = getField(item, "item_id", "itemId");
         const prediction = predictions[itemId];
-        const duration = getStockInfo(item, prediction);
-        // const duration = getStockInfo(item);
 
+        // const duration = getStockInfo(item, prediction);
+
+        const duration = getStockInfo(item, prediction);
+
+        const thresholdValue = getField(
+            item,
+            "low_stock_threshold",
+            "lowStockThreshold"
+        );
+
+        const threshold = thresholdValue == null
+            ? null
+            : Number(thresholdValue);
+
+        const isBelowThreshold =
+            threshold !== null &&
+            Number.isFinite(threshold) &&
+            quantity > 0 &&
+            quantity <= threshold;
+
+        if (isBelowThreshold && duration.color !== "red") {
+            duration.label = `Low stock · ${quantity} ${unit}`;
+            duration.color = "red";
+        }
         const row = document.createElement("tr");
         row.className = `stock-row-${duration.color}`;
 
+        // 1. Item
         addCell(row, name);
+
+        // 2. Remaining stock
         addCell(row, `${quantity} ${unit}`.trim());
+
+        // 3. Estimated duration
         addCell(
             row,
             quantity <= 0
@@ -245,39 +249,99 @@ function renderItems(items, predictions = {}) {
                     ? duration.label
                     : `${duration.days} day(s)`
         );
-        // addCell(row, quantity <= 0 ? "Finished" : `${duration.days} day(s)`);
 
+        // 4. Stock status
         const statusCell = document.createElement("td");
         const badge = document.createElement("span");
+
         badge.className = `stock-badge ${duration.color}`;
         badge.textContent = duration.label;
+
         statusCell.appendChild(badge);
         row.appendChild(statusCell);
 
-        addCell(row, getField(item, "purchase_date", "purchaseDate", "—"));
-
-        const price = getField(item, "last_purchase_price", "lastPurchasePrice");
-        addCell(row, price == null ? "—" : money(price));
-                addCell(
-            row,
-            duration.refillDate ||
-            getField(item, "estimated_refill_date", "estimatedRefillDate", "—")
+        // 5. Last purchase date
+        const lastPurchaseDate = getField(
+            item, "last_purchase_date", "lastPurchaseDate"
         );
-        // addCell(row, getField(item, "estimated_refill_date", "estimatedRefillDate", "—"));
 
-        addCell(row, getField(item, "reminder_days_before", "reminderDaysBefore", 3));
-        
+        addCell(row, formatDate(lastPurchaseDate));
+
+        // 6. Last quantity purchased
+        const lastQuantityPurchased = getField(
+            item,
+            "last_quantity_purchased",
+            "lastQuantityPurchased"
+        );
+
         addCell(
             row,
-            formatDate(getField(item, "next_stock_check_at", "nextStockCheckAt"))
+            lastQuantityPurchased == null
+                ? "—"
+                : `${lastQuantityPurchased} ${unit}`.trim()
         );
 
-        // Actions column
+        // 7. Price per unit (from genuine purchase history)
+        const lastUnitPrice = getField(
+            item, "last_unit_price", "lastUnitPrice"
+        );
+
+        addCell(
+            row,
+            lastUnitPrice == null
+                ? "—"
+                : `${money(lastUnitPrice)}/${unit}`
+        );
+
+        // 8. Total cost of the last purchase
+        const lastPurchaseTotal = getField(
+            item, "last_purchase_total", "lastPurchaseTotal"
+        );
+
+        addCell(
+            row,
+            lastPurchaseTotal == null
+                ? "—"
+                : money(lastPurchaseTotal)
+        );
+
+        // 9. Estimated refill date
+        const estimatedRefillDate =
+            duration.refillDate ||
+            getField(
+                item,
+                "estimated_refill_date",
+                "estimatedRefillDate"
+            );
+
+        addCell(row, formatDate(estimatedRefillDate));
+
+        // 10. Reminder days
+        addCell(
+            row,
+            getField(item, "reminder_days_before", "reminderDaysBefore", 3)
+        );
+
+        // 11. Next stock check
+        addCell(
+            row,
+            formatDate(
+                getField(
+                    item,
+                    "next_stock_check_at",
+                    "nextStockCheckAt"
+                )
+            )
+        );
+
+        
+        // 12. Actions — consumption only
         const actionsCell = document.createElement("td");
 
         const consumeButton = document.createElement("button");
         consumeButton.type = "button";
         consumeButton.textContent = "Consume";
+
         consumeButton.addEventListener("click", () => {
             if (itemId != null) {
                 updateStock(itemId, "CONSUME", name);
@@ -286,62 +350,96 @@ function renderItems(items, predictions = {}) {
             }
         });
 
-        const replenishButton = document.createElement("button");
-        replenishButton.type = "button";
-        replenishButton.textContent = "Replenish";
-        replenishButton.className = "secondary";
-        replenishButton.addEventListener("click", () => {
-            if (itemId != null) {
-                updateStock(itemId, "REPLENISH", name);
-            } else {
-                showMessage("Cannot update stock: item ID is missing.");
-            }
-        });
-
-        actionsCell.append(consumeButton, replenishButton);
+        actionsCell.appendChild(consumeButton);
         row.appendChild(actionsCell);
+
+
 
         body.appendChild(row);
 
-        if (duration.color === "red") {
+        // Low-stock alerts
+        // Low-stock alerts
+        if (
+            duration.color === "red" ||
+            duration.label === "Out of stock"
+        ) {
             lowCount++;
+        }
 
+        if (duration.label === "Out of stock") {
             const alert = document.createElement("li");
             alert.className = "critical";
             alert.textContent =
-                `${name}: ${quantity} ${unit} remaining — ${duration.label}`;
+                `${name}: OUT OF STOCK — replenish immediately.`;
 
             alerts.appendChild(alert);
-        } else if (duration.color === "amber") {
+
+        } else if (isBelowThreshold) {
             const alert = document.createElement("li");
+            alert.className = "critical";
             alert.textContent =
-                `${name}: ${quantity} ${unit} remaining — ${duration.label}`;
+                `${name}: LOW STOCK — ${quantity} ${unit} remaining ` +
+                `(threshold: ${threshold} ${unit}).`;
 
             alerts.appendChild(alert);
-        }
 
-        if (index === items.length - 1 && alerts.children.length === 0) {
+        } else if (duration.label.startsWith("Low")) {
             const alert = document.createElement("li");
-            alert.textContent = "No low-stock alerts.";
+            alert.className = "critical";
+            alert.textContent =
+                `${name}: LOW STOCK — ${quantity} ${unit} remaining. ` +
+                `${duration.label}`;
+
+            alerts.appendChild(alert);
+
+        } else if (
+            duration.label === "Collecting usage data" ||
+            duration.label === "Prediction unavailable"
+        ) {
+            const alert = document.createElement("li");
+            alert.className = "prediction-pending";
+            alert.textContent =
+                `${name}: Prediction pending — more usage data is needed.`;
+
             alerts.appendChild(alert);
         }
-
-        // if (duration.color !== "green") {
-        //     const alert = document.createElement("li");
-        //     alert.className = duration.color === "red" ? "critical" : "";
-        //     alert.textContent =
-        //         `${name}: ${quantity} ${unit} remaining — ${duration.label}`;
-        //     alerts.appendChild(alert);
-        // }
-
         // if (duration.color === "red") {
         //     lowCount++;
         // }
+        // // Low-stock alerts and prediction-pending messages
+        // if (duration.label === "Out of stock") {
+        //     const alert = document.createElement("li");
+        //     alert.className = "critical";
+        //     alert.textContent =
+        //         `${name}: OUT OF STOCK — replenish immediately.`;
+        //
+        //     alerts.appendChild(alert);
+        //
+        // } else if (duration.label.startsWith("Low ·")) {
+        //     const alert = document.createElement("li");
+        //     alert.className = "critical";
+        //     alert.textContent =
+        //         `${name}: ${quantity} ${unit} remaining — ${duration.label}`;
+        //
+        //     alerts.appendChild(alert);
+        //
+        // } else if (
+        //     duration.label === "Collecting usage data" ||
+        //     duration.label === "Prediction unavailable"
+        // ) {
+        //     const alert = document.createElement("li");
+        //     alert.className = "prediction-pending";
+        //     alert.textContent =
+        //         `${name}: Prediction pending — more usage data is needed.`;
+        //
+        //     alerts.appendChild(alert);
+        // }
+
     });
 
-    if (!lowCount) {
+    if (alerts.children.length === 0) {
         const alert = document.createElement("li");
-        alert.textContent = "All tracked items have more than 7 estimated days remaining.";
+        alert.textContent = "No low-stock alerts.";
         alerts.appendChild(alert);
     }
 
@@ -349,29 +447,124 @@ function renderItems(items, predictions = {}) {
     document.getElementById("lowItems").textContent = lowCount;
 }
 
+
 function renderUpcoming(data) {
     const list = document.getElementById("upcomingList");
+    const countElement = document.getElementById("upcomingItems");
+
     list.replaceChildren();
 
-    const items = Array.isArray(data) ? data : (data?.items || []);
+    const items = Array.isArray(data)
+        ? data
+        : (data?.items || []);
 
-    if (!items.length) {
-        list.textContent = "No upcoming purchases returned by the server.";
-        document.getElementById("upcomingItems").textContent = "0";
+    // Use today's local date, with the time set to midnight.
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Include today and the next 7 days.
+    const sevenDaysLater = new Date(today);
+    sevenDaysLater.setDate(sevenDaysLater.getDate() + 7);
+
+    const upcomingItems = items.filter(item => {
+        const refillDate = getField(
+            item,
+            "estimated_refill_date",
+            "estimatedRefillDate",
+            getField(item, "expectedDate", "expectedDate", null)
+        );
+
+        if (!refillDate) return false;
+
+        // Parse YYYY-MM-DD as a local calendar date.
+        const dateText = String(refillDate).slice(0, 10);
+        const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateText);
+
+        if (!match) return false;
+
+        const date = new Date(
+            Number(match[1]),
+            Number(match[2]) - 1,
+            Number(match[3])
+        );
+
+        return date >= today && date <= sevenDaysLater;
+    });
+
+    // The top card counts only purchases due within 7 days.
+    countElement.textContent = upcomingItems.length;
+
+    if (upcomingItems.length === 0) {
+        const li = document.createElement("li");
+        li.textContent = "No purchases expected within the next 7 days.";
+        list.appendChild(li);
         return;
     }
 
-    document.getElementById("upcomingItems").textContent = items.length;
+    // Show the soonest refill dates first.
+    upcomingItems.sort((a, b) => {
+        const dateA = String(getField(
+            a,
+            "estimated_refill_date",
+            "estimatedRefillDate",
+            getField(a, "expectedDate", "expectedDate", "")
+        )).slice(0, 10);
 
-    items.forEach(item => {
+        const dateB = String(getField(
+            b,
+            "estimated_refill_date",
+            "estimatedRefillDate",
+            getField(b, "expectedDate", "expectedDate", "")
+        )).slice(0, 10);
+
+        return dateA.localeCompare(dateB);
+    });
+
+    upcomingItems.forEach(item => {
         const li = document.createElement("li");
-        const name = getField(item, "item_name", "itemName", getField(item, "name", "name", "Item"));
-        const date = getField(item, "estimated_refill_date", "estimatedRefillDate", getField(item, "expectedDate", "expectedDate", null));
 
-        li.textContent = `${name} — ${date || "Date not set"}`;
+        const name = getField(
+            item,
+            "item_name",
+            "itemName",
+            getField(item, "name", "name", "Item")
+        );
+
+        const date = getField(
+            item,
+            "estimated_refill_date",
+            "estimatedRefillDate",
+            getField(item, "expectedDate", "expectedDate", null)
+        );
+
+        li.textContent = `${name} — ${String(date).slice(0, 10)}`;
         list.appendChild(li);
     });
 }
+
+// function renderUpcoming(data) {
+//     const list = document.getElementById("upcomingList");
+//     list.replaceChildren();
+
+//     const items = Array.isArray(data) ? data : (data?.items || []);
+
+//     if (!items.length) {
+//         list.textContent = "No upcoming purchases returned by the server.";
+//         document.getElementById("upcomingItems").textContent = "0";
+//         return;
+//     }
+
+//     document.getElementById("upcomingItems").textContent = items.length;
+
+//     items.forEach(item => {
+//         const li = document.createElement("li");
+//         const name = getField(item, "item_name", "itemName", getField(item, "name", "name", "Item"));
+//         const date = getField(item, "estimated_refill_date", "estimatedRefillDate", getField(item, "expectedDate", "expectedDate", null));
+
+//         li.textContent = `${name} — ${date || "Date not set"}`;
+//         list.appendChild(li);
+//     });
+// }
 
 async function loadDashboard() {
     
@@ -389,21 +582,6 @@ async function loadDashboard() {
         window.location.replace("index.html");
         return;
     }
-
-    
-    // const token = localStorage.getItem("grocerymate_token");
-    // const role = localStorage.getItem("grocerymate_role");
-    // const householdId = localStorage.getItem("grocerymate_household_id");
-
-    // if (!token) {
-    //     window.location.href = "index.html";
-    //     return;
-    // }
-
-    // if (role && role.toUpperCase() !== "USER") {
-    //     window.location.href = "vendor-dashboard.html";
-    //     return;
-    // }
 
     const queryParam = householdId ? `?householdId=${householdId}` : "";
 
@@ -442,19 +620,43 @@ document.getElementById("itemForm").addEventListener("submit", async function(ev
 
     const householdId = localStorage.getItem("grocerymate_household_id");
 
+    
+    
     const item = {
         household_id: householdId ? Number(householdId) : null,
         item_name: document.getElementById("itemName").value.trim(),
-        quantity_remaining: Number(document.getElementById("quantity").value),
+        quantity_purchased: Number(
+            document.getElementById("quantity").value
+        ),
+
+        // Low-stock threshold
+        low_stock_threshold:
+            document.getElementById("lowStockThreshold").value.trim() === ""
+                ? null
+                : Number(
+                    document.getElementById("lowStockThreshold").value
+                ),
+
         unit: document.getElementById("unit").value,
-        purchase_date: document.getElementById("purchaseDate").value || null,
-        last_purchase_price: document.getElementById("lastPrice").value === "" ? null : Number(document.getElementById("lastPrice").value),
-        expected_duration_days: Number(document.getElementById("duration").value),
-        estimated_refill_date: document.getElementById("refillDate").value || null,
-        reminder_days_before: Number(document.getElementById("reminderDays").value),
-        next_stock_check_at: document.getElementById("stockCheck").value ? document.getElementById("stockCheck").value + ":00" : null
+        purchase_date: document.getElementById("purchaseDate").value,
+        total_purchase_cost: Number(
+            document.getElementById("totalPurchaseCost").value
+        ),
+        expected_duration_days: Number(
+            document.getElementById("duration").value
+        ),
+        estimated_refill_date:
+            document.getElementById("refillDate").value || null,
+        reminder_days_before: Number(
+            document.getElementById("reminderDays").value
+        ),
+        next_stock_check_at:
+            document.getElementById("stockCheck").value
+                ? document.getElementById("stockCheck").value + ":00"
+                : null
     };
 
+        
     try {
         await apiRequest(ITEMS_API, {
             method: "POST",
@@ -473,306 +675,223 @@ document.getElementById("itemForm").addEventListener("submit", async function(ev
     }
 });
 
+/* ---------------- Notifications ---------------- */
+
+const NOTIFICATIONS_API = "/household/notifications";
+
+let notificationsPanelOpen = false;
+let notificationRefreshInProgress = false;
+
+const notificationBell = document.getElementById("notificationBell");
+const notificationBadge = document.getElementById("notificationBadge");
+const notificationPanel = document.getElementById("notificationPanel");
+const notificationList = document.getElementById("notificationList");
+const notificationStatus = document.getElementById("notificationStatus");
+const markAllNotificationsReadButton =
+    document.getElementById("markAllNotificationsRead");
+
+function setNotificationStatus(message) {
+    if (notificationStatus) {
+        notificationStatus.textContent = message || "";
+    }
+}
+
+function updateNotificationBadge(count) {
+    const unreadCount = Math.max(0, Number(count) || 0);
+
+    notificationBadge.textContent =
+        unreadCount > 99 ? "99+" : String(unreadCount);
+
+    notificationBadge.hidden = unreadCount === 0;
+
+    notificationBell.setAttribute(
+        "aria-label",
+        `Notifications, ${unreadCount} unread`
+    );
+}
+
+function formatNotificationDate(value) {
+    if (!value) return "";
+
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+        return String(value).replace("T", " ").slice(0, 16);
+    }
+
+    return date.toLocaleString("en-IN", {
+        dateStyle: "medium",
+        timeStyle: "short"
+    });
+}
+
+async function loadUnreadNotificationCount() {
+    const result = await apiRequest(
+        `${NOTIFICATIONS_API}/unread-count`
+    );
+
+    updateNotificationBadge(result?.unreadCount ?? 0);
+}
+
+function renderNotifications(notifications) {
+    notificationList.replaceChildren();
+
+    if (!notifications.length) {
+        const empty = document.createElement("li");
+        empty.className = "notification-item";
+        empty.textContent = "You're all caught up. No notifications.";
+        notificationList.appendChild(empty);
+        return;
+    }
+
+    notifications.forEach(notification => {
+        const item = document.createElement("li");
+        item.className = "notification-item";
+
+        const isRead =
+            notification.is_read === true ||
+            notification.is_read === 1 ||
+            notification.is_read === "1";
+
+        if (!isRead) {
+            item.classList.add("unread");
+        }
+
+        const message = document.createElement("p");
+        message.className = "notification-message";
+        message.textContent = notification.message || "New notification";
+
+        const meta = document.createElement("div");
+        meta.className = "notification-meta";
+
+        const date = document.createElement("span");
+        date.textContent = formatNotificationDate(notification.created_at);
+        meta.appendChild(date);
+
+        if (!isRead) {
+            const readButton = document.createElement("button");
+            readButton.type = "button";
+            readButton.className = "notification-read-button";
+            readButton.textContent = "Mark read";
+
+            readButton.addEventListener("click", async () => {
+                readButton.disabled = true;
+
+                try {
+                    await apiRequest(
+                        `${NOTIFICATIONS_API}/${notification.notification_id}/read`,
+                        { method: "PATCH" }
+                    );
+
+                    await refreshNotifications();
+                } catch (error) {
+                    setNotificationStatus(
+                        "Could not mark notification as read: " + error.message
+                    );
+                    readButton.disabled = false;
+                }
+            });
+
+            meta.appendChild(readButton);
+        } else {
+            const readLabel = document.createElement("span");
+            readLabel.textContent = "Read";
+            meta.appendChild(readLabel);
+        }
+
+        item.append(message, meta);
+        notificationList.appendChild(item);
+    });
+}
+
+async function loadNotificationList() {
+    const result = await apiRequest(
+        `${NOTIFICATIONS_API}?limit=50`
+    );
+
+    const notifications = Array.isArray(result)
+        ? result
+        : (result?.notifications || []);
+
+    renderNotifications(notifications);
+}
+
+async function refreshNotifications() {
+    if (notificationRefreshInProgress) return;
+
+    notificationRefreshInProgress = true;
+
+    try {
+        await loadUnreadNotificationCount();
+
+        if (notificationsPanelOpen) {
+            await loadNotificationList();
+            setNotificationStatus("");
+        }
+    } catch (error) {
+        console.error("Could not refresh notifications:", error);
+
+        if (notificationsPanelOpen) {
+            setNotificationStatus(
+                "Unable to load notifications. " + error.message
+            );
+        }
+    } finally {
+        notificationRefreshInProgress = false;
+    }
+}
+
+notificationBell.addEventListener("click", async () => {
+    notificationsPanelOpen = !notificationsPanelOpen;
+
+    notificationPanel.hidden = !notificationsPanelOpen;
+    notificationBell.setAttribute(
+        "aria-expanded",
+        String(notificationsPanelOpen)
+    );
+
+    if (notificationsPanelOpen) {
+        setNotificationStatus("Loading notifications...");
+        await refreshNotifications();
+    }
+});
+
+markAllNotificationsReadButton.addEventListener("click", async () => {
+    markAllNotificationsReadButton.disabled = true;
+
+    try {
+        await apiRequest(
+            `${NOTIFICATIONS_API}/read-all`,
+            { method: "PATCH" }
+        );
+
+        await refreshNotifications();
+        setNotificationStatus("All notifications marked as read.");
+    } catch (error) {
+        setNotificationStatus(
+            "Could not mark notifications as read: " + error.message
+        );
+    } finally {
+        markAllNotificationsReadButton.disabled = false;
+    }
+});
+
+// Close the panel when clicking elsewhere on the page.
+document.addEventListener("click", event => {
+    if (
+        notificationsPanelOpen &&
+        !event.target.closest(".notification-area")
+    ) {
+        notificationsPanelOpen = false;
+        notificationPanel.hidden = true;
+        notificationBell.setAttribute("aria-expanded", "false");
+    }
+});
+
+// Load unread count immediately and refresh periodically.
+refreshNotifications();
+setInterval(refreshNotifications, 60000);
+
 loadDashboard();
-
-
-
-// const ITEMS_API = "/household/items";
-// const SPENDING_API = "/household/spending/monthly";
-// const UPCOMING_API = "/household/purchases/upcoming";
-
-// function getField(item, snake, camel, fallback = null) {
-//     return item[snake] ?? item[camel] ?? fallback;
-// }
-
-// function showMessage(message, success = false) {
-//     const element = document.getElementById("message");
-//     element.textContent = message;
-//     element.style.color = success ? "#17642b" : "#b42318";
-// }
-
-// function formatDate(value) {
-//     if (!value) return "—";
-//     return String(value).replace("T", " ").slice(0, 16);
-// }
-
-
-// function getStockInfo(item) {
-//     const quantity = Number(
-//         getField(item, "quantity_remaining", "quantityRemaining", 0)
-//     );
-
-//     const duration = Number(
-//         getField(item, "expected_duration_days", "expectedDurationDays", 30)
-//     );
-
-//     const purchaseDate = getField(
-//         item, "purchase_date", "purchaseDate"
-//     );
-
-//     if (quantity <= 0) {
-//         return { days: 0, label: "Out of stock", color: "red" };
-//     }
-
-//     let daysRemaining = duration;
-
-//     if (purchaseDate) {
-//         const purchased = new Date(`${purchaseDate}T00:00:00`);
-//         const today = new Date();
-//         today.setHours(0, 0, 0, 0);
-
-//         if (!Number.isNaN(purchased.getTime())) {
-//             const elapsed = Math.max(
-//                 0,
-//                 Math.floor((today - purchased) / 86400000)
-//             );
-
-//             daysRemaining = Math.max(0, duration - elapsed);
-//         }
-//     }
-
-//     if (daysRemaining <= 3) {
-//         return {
-//             days: daysRemaining,
-//             label: `Critical · ${daysRemaining} day(s)`,
-//             color: "red"
-//         };
-//     }
-
-//     if (daysRemaining <= 7) {
-//         return {
-//             days: daysRemaining,
-//             label: `Low · ${daysRemaining} days`,
-//             color: "amber"
-//         };
-//     }
-
-//     return {
-//         days: daysRemaining,
-//         label: `Good · ${daysRemaining} days`,
-//         color: "green"
-//     };
-// }
-
-
-// function addCell(row, value) {
-//     const cell = document.createElement("td");
-//     cell.textContent = value ?? "—";
-//     row.appendChild(cell);
-//     return cell;
-// }
-
-// function renderItems(items) {
-//     const body = document.getElementById("itemsBody");
-//     const alerts = document.getElementById("alertsList");
-
-//     body.replaceChildren();
-//     alerts.replaceChildren();
-
-//     let lowCount = 0;
-
-//     if (!items.length) {
-//         const row = document.createElement("tr");
-//         addCell(row, "No household essentials added yet.");
-//         const cell = row.firstElementChild;
-//         cell.colSpan = 9;
-//         body.appendChild(row);
-//     }
-
-//     items.forEach(item => {
-//         const name = getField(item, "item_name", "itemName", "Unnamed item");
-//         const quantity = Number(
-//             getField(item, "quantity_remaining", "quantityRemaining", 0)
-//         );
-//         const unit = getField(item, "unit", "unit", "");
-//         const duration = getStockInfo(item);
-
-//         const row = document.createElement("tr");
-//         row.className = `stock-row-${duration.color}`;
-
-//         addCell(row, name);
-//         addCell(row, `${quantity} ${unit}`.trim());
-
-//         addCell(
-//             row,
-//             quantity <= 0 ? "Finished" : `${duration.days} day(s)`
-//         );
-
-//         const statusCell = document.createElement("td");
-//         const badge = document.createElement("span");
-//         badge.className = `stock-badge ${duration.color}`;
-//         badge.textContent = duration.label;
-//         statusCell.appendChild(badge);
-//         row.appendChild(statusCell);
-
-//         addCell(row, getField(item, "purchase_date", "purchaseDate", "—"));
-
-//         const price = getField(
-//             item, "last_purchase_price", "lastPurchasePrice"
-//         );
-//         addCell(row, price == null ? "—" : money(price));
-
-//         addCell(
-//             row,
-//             getField(item, "estimated_refill_date", "estimatedRefillDate", "—")
-//         );
-
-//         addCell(
-//             row,
-//             getField(item, "reminder_days_before", "reminderDaysBefore", 3)
-//         );
-
-//         addCell(
-//             row,
-//             formatDate(
-//                 getField(item, "next_stock_check_at", "nextStockCheckAt")
-//             )
-//         );
-
-//         body.appendChild(row);
-
-//         if (duration.color !== "green") {
-//             lowCount++;
-
-//             const alert = document.createElement("li");
-//             alert.className = duration.color === "red" ? "critical" : "";
-//             alert.textContent =
-//                 `${name}: ${quantity} ${unit} remaining — ${duration.label}`;
-
-//             alerts.appendChild(alert);
-//         }
-//     });
-
-//     if (!lowCount) {
-//         const alert = document.createElement("li");
-//         alert.textContent = "All tracked items have more than 7 estimated days remaining.";
-//         alerts.appendChild(alert);
-//     }
-
-//     document.getElementById("totalItems").textContent = items.length;
-//     document.getElementById("lowItems").textContent = lowCount;
-// }
-
-// function renderUpcoming(data) {
-//     const list = document.getElementById("upcomingList");
-//     list.replaceChildren();
-
-//     const items = Array.isArray(data) ? data : (data?.items || []);
-
-//     // If the endpoint returns purchase records, display those records.
-//     // Otherwise derive upcoming refills from the household items.
-//     if (!items.length) {
-//         list.textContent = "No upcoming purchases returned by the server.";
-//         document.getElementById("upcomingItems").textContent = "0";
-//         return;
-//     }
-
-//     document.getElementById("upcomingItems").textContent = items.length;
-
-//     items.forEach(item => {
-//         const li = document.createElement("li");
-//         const name = getField(item, "item_name", "itemName",
-//             getField(item, "name", "name", "Item"));
-
-//         const date = getField(
-//             item, "estimated_refill_date", "estimatedRefillDate",
-//             getField(item, "expectedDate", "expectedDate", null)
-//         );
-
-//         li.textContent = `${name} — ${date || "Date not set"}`;
-//         list.appendChild(li);
-//     });
-// }
-
-// async function loadDashboard() {
-//     const token = localStorage.getItem("grocerymate_token");
-//     const role = localStorage.getItem("grocerymate_role");
-
-//     if (!token) {
-//         window.location.href = "index.html";
-//         return;
-//     }
-
-//     if (role && role.toUpperCase() !== "USER") {
-//         window.location.href = "vendor-dashboard.html";
-//         return;
-//     }
-
-//     try {
-//         const [itemsResponse, spendingResponse, upcomingResponse] =
-//             await Promise.all([
-//                 apiRequest(ITEMS_API),
-//                 apiRequest(SPENDING_API),
-//                 apiRequest(UPCOMING_API)
-//             ]);
-
-//         const items = Array.isArray(itemsResponse)
-//             ? itemsResponse
-//             : (itemsResponse?.items || []);
-
-//         renderItems(items);
-
-//         const spending = typeof spendingResponse === "number"
-//             ? spendingResponse
-//             : (spendingResponse?.total ??
-//                spendingResponse?.amount ?? 0);
-
-//         document.getElementById("monthlySpend").textContent =
-//             money(spending);
-
-//         renderUpcoming(upcomingResponse);
-
-//         showMessage("Dashboard data loaded successfully.", true);
-//     } catch (error) {
-//         showMessage(
-//             "Could not load dashboard data: " + error.message
-//         );
-//     }
-// }
-
-// document.getElementById("itemForm").addEventListener("submit",
-//     async function(event) {
-//         event.preventDefault();
-
-//         const item = {
-//             item_name: document.getElementById("itemName").value.trim(),
-//             quantity_remaining:
-//                 Number(document.getElementById("quantity").value),
-//             unit: document.getElementById("unit").value,
-//             purchase_date:
-//                 document.getElementById("purchaseDate").value || null,
-//             last_purchase_price:
-//                 document.getElementById("lastPrice").value === ""
-//                     ? null
-//                     : Number(document.getElementById("lastPrice").value),
-//             expected_duration_days:
-//                 Number(document.getElementById("duration").value),
-//             estimated_refill_date:
-//                 document.getElementById("refillDate").value || null,
-//             reminder_days_before:
-//                 Number(document.getElementById("reminderDays").value),
-//             next_stock_check_at:document.getElementById("stockCheck").value? document.getElementById("stockCheck").value + ":00": null
-//         };
-
-//         try {
-//             await apiRequest(ITEMS_API, {
-//                 method: "POST",
-//                 body: JSON.stringify(item)
-//             });
-
-//             showMessage("Household essential saved successfully.", true);
-//             event.target.reset();
-
-//             document.getElementById("duration").value = 30;
-//             document.getElementById("reminderDays").value = 3;
-
-//             await loadDashboard();
-//         } catch (error) {
-//             showMessage("Could not save item: " + error.message);
-//         }
-//     }
-// );
-
-// loadDashboard();
 
 
