@@ -40,14 +40,22 @@ public class SecurityConfig {
                         .sessionFixation(fixation -> fixation.changeSessionId())
                 )
 
+
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/", "/index.html", "/style.css", "/app.js",
-                                "/favicon.ico", "/error").permitAll()
+                        .requestMatchers(
+                                "/", "/index.html", "/style.css", "/app.js",
+                                "/favicon.ico", "/error"
+                        ).permitAll()
+
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/csrf").permitAll()
+
                         .requestMatchers("/api/household/**").authenticated()
+                        .requestMatchers("/api/vendor/**").hasRole("VENDOR")
+
                         .anyRequest().permitAll()
                 );
+
 
         return http.build();
     }

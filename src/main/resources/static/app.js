@@ -42,6 +42,10 @@ const statusMessage = document.getElementById("statusMessage");
 const signupFields = document.getElementById("signupFields");
 const vendorFields = document.getElementById("vendorFields");
 const householdFields = document.getElementById("householdFields");
+const householdActionSelect = document.getElementById("householdAction");
+const createHouseholdFields = document.getElementById("createHouseholdFields");
+const joinHouseholdFields = document.getElementById("joinHouseholdFields");
+const invitationCodeInput = document.getElementById("invitationCode");
 const submitButton = document.getElementById("submitButton");
 const submitLabel = document.getElementById("submitLabel");
 const password = document.getElementById("password");
@@ -54,6 +58,12 @@ const termsText = document.getElementById("termsText");
 let currentRole = "user";
 let currentMode = "signup";
 
+function updateHouseholdActionFields() {
+  const joining = householdActionSelect.value === "JOIN";
+
+  createHouseholdFields.hidden = joining;
+  joinHouseholdFields.hidden = !joining;
+}
 function setRole(role) {
   currentRole = role;
   document.querySelectorAll("[data-role]").forEach(button => {
@@ -65,6 +75,7 @@ function setRole(role) {
   householdFields.hidden = role !== "user" || currentMode !== "signup";
   updateLabels();
   clearStatus();
+  updateHouseholdActionFields();
 }
 
 function setMode(mode) {
@@ -82,6 +93,7 @@ function setMode(mode) {
   clearErrors();
   clearStatus();
   updateLabels();
+  updateHouseholdActionFields();
 }
 
 function updateLabels() {
@@ -133,7 +145,27 @@ function validate() {
   if (currentMode === "signup") {
     if (!value("fullName")) { setFieldError("fullName", "Enter your full name."); valid = false; }
     if (currentRole === "vendor" && !value("shopName")) { setFieldError("shopName", "Enter your shop name."); valid = false; }
-    if (currentRole === "user" && !value("householdName")) { setFieldError("householdName", "Enter your household name."); valid = false; }
+    if (currentRole === "user") {
+      if (householdActionSelect.value === "CREATE") {
+        if (!value("householdName")) {
+          setFieldError("householdName", "Enter your household name.");
+          valid = false;
+        }
+      } else if (householdActionSelect.value === "JOIN") {
+        const code = value("invitationCode");
+
+        if (!code) {
+          setFieldError("invitationCode", "Enter the invitation code.");
+          valid = false;
+        } else if (!/^[A-Za-z0-9]{12}$/.test(code)) {
+          setFieldError(
+            "invitationCode",
+            "Enter the 12-character invitation code."
+          );
+          valid = false;
+        }
+      }
+    }
     const phone = value("phone");
     if (phone && !/^[0-9+\-\s()]{7,15}$/.test(phone)) { setFieldError("phone", "Enter a valid phone number."); valid = false; }
     const pin = value("pincode");
@@ -161,12 +193,16 @@ function buildRegistrationPayload() {
   }
   return {
     ...common,
-    householdName: value("householdName"),
+    householdAction: householdActionSelect.value,
+    householdName: householdActionSelect.value === "CREATE"
+      ? value("householdName")
+      : null,
     address: value("address") || null,
     city: value("city") || null,
     state: value("state") || null,
     pincode: value("pincode") || null
   };
+
 }
 
 async function readResponse(response) {
@@ -223,18 +259,39 @@ form.addEventListener("submit", async event => {
       return;
     }
 
-    if (currentMode === "signup") {
-      showStatus(data.message || "Account created successfully. You can now log in.", "success");
-      setMode("login");
-      password.value = "";
-      // Keep email filled to make the next step easy.
+    
+  if (currentMode === "signup") {
+    if (
+      currentRole === "user" &&
+      householdActionSelect.value === "JOIN"
+    ) {
+      sessionStorage.setItem(
+        "grocerymate_pending_invitation_code",
+        value("invitationCode").toUpperCase()
+      );
     } else {
+      sessionStorage.removeItem("grocerymate_pending_invitation_code");
+    }
+
+    showStatus(
+      data.message || "Account created successfully. You can now log in.",
+      "success"
+    );
+
+    setMode("login");
+    password.value = "";
+  }else {
       // Save the account details returned by the backend.
-      if (data.householdId != null) {
+      if (
+        data.householdId != null &&
+        Number(data.householdId) > 0
+      ) {
         localStorage.setItem(
           "grocerymate_household_id",
           String(data.householdId)
         );
+      } else {
+        localStorage.removeItem("grocerymate_household_id");
       }
 
       if (data.userId != null) {
@@ -256,6 +313,55 @@ form.addEventListener("submit", async event => {
       }
 
       showStatus(data.message || "Login successful.", "success");
+      
+      if (role === "USER") {
+        const pendingCode = sessionStorage.getItem(
+          "grocerymate_pending_invitation_code"
+        );
+
+        if (pendingCode) {
+          const csrfToken = await getCsrfToken();
+
+          const acceptResponse = await fetch(
+            `${API_BASE}/api/household/invitations/accept`,
+            {
+              method: "POST",
+              credentials: "same-origin",
+              headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+                "X-XSRF-TOKEN": csrfToken
+              },
+              body: JSON.stringify({
+                invitationCode: pendingCode
+              })
+            }
+          );
+
+          const acceptData = await readResponse(acceptResponse);
+
+          if (!acceptResponse.ok) {
+            showStatus(
+              acceptData.message || "Could not accept the household invitation.",
+              "error"
+            );
+            return;
+          }
+
+          // Save the household returned by the backend.
+          localStorage.setItem(
+            "grocerymate_household_id",
+            String(acceptData.householdId)
+          );
+
+          sessionStorage.removeItem("grocerymate_pending_invitation_code");
+
+          showStatus(
+            "Invitation accepted. You have joined the household!",
+            "success"
+          );
+        }
+      }
 
       if (role === "VENDOR") {
         window.location.assign("vendor-dashboard.html");
@@ -287,6 +393,10 @@ togglePassword.addEventListener("click", () => {
   password.type = show ? "text" : "password";
   togglePassword.textContent = show ? "Hide" : "Show";
 });
+householdActionSelect.addEventListener(
+  "change",
+  updateHouseholdActionFields
+);
 
 setRole("user");
 setMode("signup");

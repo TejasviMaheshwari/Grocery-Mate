@@ -15,7 +15,9 @@ import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
-
+import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
+import java.util.LinkedHashMap;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.PreparedStatement;
@@ -170,6 +172,170 @@ public class HouseholdController {
         } catch (Exception e) {
             return error(HttpStatus.INTERNAL_SERVER_ERROR,
                     "Could not calculate monthly spending.");
+        }
+    }
+
+
+    // GET /api/household/spending/analytics
+    @GetMapping("/spending/analytics")
+    public ResponseEntity<?> getSpendingAnalytics(
+            @RequestParam(required = false) Long householdId,
+            Authentication authentication) {
+
+        if (authentication == null
+                || !(authentication.getPrincipal()
+                instanceof AuthenticatedAccount account)) {
+            return error(HttpStatus.UNAUTHORIZED,
+                    "Please log in again.");
+        }
+
+        if (!"USER".equalsIgnoreCase(account.role())
+                || account.householdId() == null) {
+            return error(HttpStatus.FORBIDDEN,
+                    "You are not authorized to view household spending.");
+        }
+
+        Long authenticatedHouseholdId = account.householdId();
+
+        if (householdId != null
+                && !authenticatedHouseholdId.equals(householdId)) {
+            return error(HttpStatus.FORBIDDEN,
+                    "You cannot view another household's spending.");
+        }
+
+        try {
+            YearMonth currentMonth = YearMonth.now();
+            YearMonth previousMonth = currentMonth.minusMonths(1);
+            YearMonth firstMonth = currentMonth.minusMonths(5);
+
+            DateTimeFormatter monthFormatter =
+                    DateTimeFormatter.ofPattern("yyyy-MM");
+
+            // Create all six months first so months without purchases
+            // are still returned with a spending total of zero.
+            Map<String, BigDecimal> monthlyTrend =
+                    new LinkedHashMap<>();
+
+            for (int i = 0; i < 6; i++) {
+                String month = firstMonth.plusMonths(i)
+                        .format(monthFormatter);
+
+                monthlyTrend.put(month, BigDecimal.ZERO);
+            }
+
+            List<Map<String, Object>> monthlyRows =
+                    jdbcTemplate.queryForList("""
+                    SELECT DATE_FORMAT(ph.purchase_date, '%Y-%m') AS month,
+                           COALESCE(SUM(ph.total_amount), 0) AS total
+                    FROM purchase_history ph
+                    JOIN household_items hi
+                      ON hi.item_id = ph.item_id
+                    WHERE hi.household_id = ?
+                      AND (
+                          ph.notes IS NULL
+                          OR ph.notes NOT LIKE 'TEST DATA%'
+                      )
+                      AND ph.purchase_date >= ?
+                      AND ph.purchase_date < ?
+                    GROUP BY DATE_FORMAT(ph.purchase_date, '%Y-%m')
+                    ORDER BY month
+                    """,
+                            authenticatedHouseholdId,
+                            firstMonth.atDay(1),
+                            currentMonth.plusMonths(1).atDay(1));
+
+            for (Map<String, Object> row : monthlyRows) {
+                String month = String.valueOf(row.get("month"));
+                Object totalValue = row.get("total");
+
+                if (monthlyTrend.containsKey(month)
+                        && totalValue != null) {
+                    monthlyTrend.put(
+                            month,
+                            new BigDecimal(totalValue.toString())
+                    );
+                }
+            }
+
+            BigDecimal currentTotal = monthlyTrend.get(
+                    currentMonth.format(monthFormatter));
+
+            BigDecimal previousTotal = jdbcTemplate.queryForObject("""
+                    SELECT COALESCE(SUM(ph.total_amount), 0)
+                    FROM purchase_history ph
+                    JOIN household_items hi
+                      ON hi.item_id = ph.item_id
+                    WHERE hi.household_id = ?
+                      AND (
+                          ph.notes IS NULL
+                          OR ph.notes NOT LIKE 'TEST DATA%'
+                      )
+                      AND ph.purchase_date >= ?
+                      AND ph.purchase_date < ?
+                    """,
+                    BigDecimal.class,
+                    authenticatedHouseholdId,
+                    previousMonth.atDay(1),
+                    currentMonth.atDay(1));
+
+            if (previousTotal == null) {
+                previousTotal = BigDecimal.ZERO;
+            }
+
+            BigDecimal difference = currentTotal.subtract(previousTotal);
+
+            // Percentage change is undefined when the previous month
+            // had no spending. Return null instead of misleading data.
+            BigDecimal percentageChange = null;
+
+            if (previousTotal.compareTo(BigDecimal.ZERO) > 0) {
+                percentageChange = difference
+                        .multiply(BigDecimal.valueOf(100))
+                        .divide(previousTotal, 2, RoundingMode.HALF_UP);
+            }
+
+            List<Map<String, Object>> spendingByItem =
+                    jdbcTemplate.queryForList("""
+                    SELECT hi.item_name AS itemName,
+                           COALESCE(SUM(ph.total_amount), 0) AS totalSpent
+                    FROM purchase_history ph
+                    JOIN household_items hi
+                      ON hi.item_id = ph.item_id
+                    WHERE hi.household_id = ?
+                      AND (
+                          ph.notes IS NULL
+                          OR ph.notes NOT LIKE 'TEST DATA%'
+                      )
+                      AND ph.purchase_date >= ?
+                      AND ph.purchase_date < ?
+                    GROUP BY hi.item_id, hi.item_name
+                    ORDER BY totalSpent DESC, hi.item_name ASC
+                    LIMIT 10
+                    """,
+                            authenticatedHouseholdId,
+                            currentMonth.atDay(1),
+                            currentMonth.plusMonths(1).atDay(1));
+
+            Map<String, Object> response = new LinkedHashMap<>();
+
+            response.put("currentMonth",
+                    currentMonth.format(monthFormatter));
+            response.put("currentMonthTotal", currentTotal);
+            response.put("previousMonth",
+                    previousMonth.format(monthFormatter));
+            response.put("previousMonthTotal", previousTotal);
+            response.put("difference", difference);
+            response.put("percentageChange", percentageChange);
+            response.put("monthlyTrend", monthlyTrend);
+            response.put("spendingByItem", spendingByItem);
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            // Log the exception in your application logs while keeping
+            // internal database details out of the API response.
+            return error(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Could not calculate spending analytics.");
         }
     }
 

@@ -11,6 +11,8 @@
     <h1>GroceryMate</h1>
     
     <nav class="dashboard-nav">
+        <a href="#household-management">Household</a>
+        <a href="#request-items">Request Items</a>
         <a href="#essentials">My Essentials</a>
         <a href="#alerts">Low Stock</a>
         <a href="#add-item">Add Item</a>
@@ -51,13 +53,6 @@
 
         <button type="button" onclick="logout()">Logout</button>
     </nav>
-
-    <!-- <nav>
-        <a href="#essentials">My Essentials</a>
-        <a href="#alerts">Low Stock</a>
-        <a href="#add-item">Add Item</a>
-        <button onclick="logout()">Logout</button>
-    </nav> -->
 </header>
 
 <main>
@@ -70,7 +65,195 @@
         <article><h3>Monthly Spending</h3><p id="monthlySpend">₹0.00</p></article>
         <article><h3>Upcoming Purchases</h3><p id="upcomingItems">0</p></article>
     </section>
+    
+    <!-- ---------------- Spending Analytics ---------------- -->
+    <section id="spending-analytics" class="spending-analytics">
+        <div class="analytics-heading">
+            <div>
+                <h2>Spending Analytics</h2>
+                <p>Understand your household's spending patterns.</p>
+            </div>
+            <span id="analyticsPeriod" class="analytics-period">Last 6 months</span>
+        </div>
 
+        <p id="analyticsStatus" class="analytics-status"
+        role="status" aria-live="polite">
+            Loading spending analytics...
+        </p>
+
+        <div id="spendingComparison" class="spending-comparison" hidden>
+            
+            <article class="analytics-stat">
+                <h3 id="analyticsCurrentLabel">Current Month</h3>
+                <p id="analyticsCurrentTotal">₹0.00</p>
+                <span>Recorded purchase spending</span>
+                <p id="currentMonthPurchaseCount" class="purchase-count">
+                    Loading purchase count...
+                </p>
+            </article>
+
+            <article class="analytics-stat">
+                <h3 id="analyticsPreviousLabel">Previous Month</h3>
+                <p id="analyticsPreviousTotal">₹0.00</p>
+                <span>Recorded purchase spending</span>
+            </article>
+
+            <article class="analytics-stat">
+                <h3>Monthly Difference</h3>
+                <p id="analyticsDifference">₹0.00</p>
+                <span id="analyticsChangeNote">Compared with previous month</span>
+            </article>
+        </div>
+
+        <div id="analyticsInsights" class="analytics-insights" hidden>
+            <h3>Spending Insight</h3>
+            <p id="analyticsInsightText"></p>
+        </div>
+
+        <div class="analytics-charts">
+            <article class="analytics-chart-card">
+                <h3>Six-Month Spending Trend</h3>
+                <p class="analytics-description">
+                    Total recorded purchases for each month.
+                </p>
+                <div id="monthlyTrendChart" class="monthly-trend-chart"
+                    aria-label="Monthly spending trend"></div>
+            </article>
+
+            <article class="analytics-chart-card">
+                <h3>Top-Spending Items</h3>
+                <p class="analytics-description">
+                    Your highest-spending items this month.
+                </p>
+                <div id="spendingByItemChart" class="spending-item-chart"
+                    aria-label="Spending by item"></div>
+            </article>
+        </div>
+    </section>
+
+    <section id="household-management">
+        <h2>Household Management</h2>
+        <p>
+            Invite someone to join your household. Each invitation can be
+            used once and expires after 24 hours.
+        </p>
+
+        <div id="invitationOwnerNotice" role="status" aria-live="polite">
+            Only the household owner can generate invitations.
+        </div>
+
+        <div class="invitation-actions">
+            <button type="button" id="generateInvitationButton">
+                Generate Invitation
+            </button>
+
+            <button type="button" id="copyInvitationButton" hidden>
+                Copy Code
+            </button>
+        </div>
+
+        <div id="invitationResult" hidden>
+            <label for="invitationCodeDisplay">Invitation Code</label>
+            <input
+                id="invitationCodeDisplay"
+                type="text"
+                readonly
+                aria-label="Generated invitation code"
+            >
+            <p>
+                Share this code privately with the person joining your household.
+            </p>
+        </div>
+
+        <p id="invitationMessage" role="status" aria-live="polite"></p>
+    </section>
+
+    <section id="household-members-section" class="household-members-section">
+        <div class="household-members-header">
+            <div>
+                <h3>Household Members</h3>
+                <p>People who currently share your household.</p>
+            </div>
+
+            <button type="button" id="refreshHouseholdMembers">
+                Refresh
+            </button>
+        </div>
+
+        <p id="householdMembersStatus" role="status" aria-live="polite">
+            Loading household members...
+        </p>
+
+        <div id="householdMembersList" class="household-members-list"></div>
+    </section>
+
+    <section id="request-items" class="request-items-section">
+        <h2>Request Items from Vendors</h2>
+        <p>
+            Request groceries for your household. A suitable vendor will be
+            assigned when available.
+        </p>
+
+        <form id="requestItemForm">
+            <div class="form-grid">
+                <div class="field">
+                    <label for="requestItemName">Item Name *</label>
+                    <input
+                        id="requestItemName"
+                        name="requested_item_name"
+                        maxlength="255"
+                        required
+                        placeholder="e.g. Moong Dal">
+                </div>
+
+                <div class="field">
+                    <label for="requestQuantity">Quantity *</label>
+                    <input
+                        id="requestQuantity"
+                        name="requested_quantity"
+                        type="number"
+                        min="0.01"
+                        step="0.01"
+                        required
+                        placeholder="e.g. 2">
+                </div>
+
+                <div class="field">
+                    <label for="requestUnit">Unit *</label>
+                    <select id="requestUnit" name="unit" required>
+                        <option value="kg">Kilogram (kg)</option>
+                        <option value="g">Gram (g)</option>
+                        <option value="L">Litre (L)</option>
+                        <option value="ml">Millilitre (ml)</option>
+                        <option value="packet">Packet</option>
+                        <option value="piece">Piece</option>
+                        <option value="bottle">Bottle</option>
+                        <option value="unit">Unit</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label for="requestNotes">Notes (optional)</label>
+                    <input
+                        id="requestNotes"
+                        name="notes"
+                        maxlength="255"
+                        placeholder="Brand preference or instructions">
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" id="submitItemRequest">
+                    Submit Request
+                </button>
+                <button type="reset" class="secondary">
+                    Clear Form
+                </button>
+            </div>
+        </form>
+
+        <p id="requestItemMessage" role="status" aria-live="polite"></p>
+    </section>
     <section id="essentials">
         <h2>My Household Essentials</h2>
         <p class="legend">

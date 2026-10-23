@@ -2,7 +2,7 @@ const ITEMS_API = "/household/items";
 const SPENDING_API = "/household/spending/monthly";
 const UPCOMING_API = "/household/purchases/upcoming";
 const PREDICTION_API = "/household/items";
-
+const SPENDING_ANALYTICS_API = "/household/spending/analytics"; 
 function getField(item, snake, camel, fallback = null) {
     return item[snake] ?? item[camel] ?? fallback;
 }
@@ -403,38 +403,6 @@ function renderItems(items, predictions = {}) {
 
             alerts.appendChild(alert);
         }
-        // if (duration.color === "red") {
-        //     lowCount++;
-        // }
-        // // Low-stock alerts and prediction-pending messages
-        // if (duration.label === "Out of stock") {
-        //     const alert = document.createElement("li");
-        //     alert.className = "critical";
-        //     alert.textContent =
-        //         `${name}: OUT OF STOCK — replenish immediately.`;
-        //
-        //     alerts.appendChild(alert);
-        //
-        // } else if (duration.label.startsWith("Low ·")) {
-        //     const alert = document.createElement("li");
-        //     alert.className = "critical";
-        //     alert.textContent =
-        //         `${name}: ${quantity} ${unit} remaining — ${duration.label}`;
-        //
-        //     alerts.appendChild(alert);
-        //
-        // } else if (
-        //     duration.label === "Collecting usage data" ||
-        //     duration.label === "Prediction unavailable"
-        // ) {
-        //     const alert = document.createElement("li");
-        //     alert.className = "prediction-pending";
-        //     alert.textContent =
-        //         `${name}: Prediction pending — more usage data is needed.`;
-        //
-        //     alerts.appendChild(alert);
-        // }
-
     });
 
     if (alerts.children.length === 0) {
@@ -542,29 +510,269 @@ function renderUpcoming(data) {
     });
 }
 
-// function renderUpcoming(data) {
-//     const list = document.getElementById("upcomingList");
-//     list.replaceChildren();
 
-//     const items = Array.isArray(data) ? data : (data?.items || []);
+/* ---------------- Spending Analytics ---------------- */
 
-//     if (!items.length) {
-//         list.textContent = "No upcoming purchases returned by the server.";
-//         document.getElementById("upcomingItems").textContent = "0";
-//         return;
-//     }
+function formatAnalyticsMonth(value) {
+    if (!value) return "—";
 
-//     document.getElementById("upcomingItems").textContent = items.length;
+    const parts = String(value).split("-");
+    if (parts.length !== 2) return String(value);
 
-//     items.forEach(item => {
-//         const li = document.createElement("li");
-//         const name = getField(item, "item_name", "itemName", getField(item, "name", "name", "Item"));
-//         const date = getField(item, "estimated_refill_date", "estimatedRefillDate", getField(item, "expectedDate", "expectedDate", null));
+    const date = new Date(
+        Number(parts[0]),
+        Number(parts[1]) - 1,
+        1
+    );
 
-//         li.textContent = `${name} — ${date || "Date not set"}`;
-//         list.appendChild(li);
-//     });
-// }
+    return date.toLocaleDateString("en-IN", {
+        month: "short",
+        year: "2-digit"
+    });
+}
+
+function analyticsMoney(value) {
+    const amount = Number(value);
+
+    return "₹" + (Number.isFinite(amount) ? amount : 0)
+        .toLocaleString("en-IN", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+}
+
+
+
+function renderMonthlyTrend(trend) {
+    const container = document.getElementById("monthlyTrendChart");
+    if (!container) return;
+
+    const entries = Object.entries(trend || {}).sort(
+        ([monthA], [monthB]) => monthA.localeCompare(monthB)
+    );
+
+    const maxValue = Math.max(
+        1,
+        ...entries.map(([, amount]) => Number(amount) || 0)
+    );
+
+    container.replaceChildren();
+
+    entries.forEach(([month, amount]) => {
+        const value = Number(amount) || 0;
+        const row = document.createElement("div");
+        row.className = "trend-row";
+
+        const monthLabel = document.createElement("span");
+        monthLabel.className = "trend-month";
+        monthLabel.textContent = formatAnalyticsMonth(month);
+
+        const track = document.createElement("div");
+        track.className = "trend-bar-track";
+
+        const bar = document.createElement("div");
+        bar.className = "trend-bar";
+        bar.style.width = value > 0
+            ? `${Math.max(3, (value / maxValue) * 100)}%`
+            : "0%";
+
+        track.appendChild(bar);
+
+        const valueLabel = document.createElement("span");
+        valueLabel.className = "trend-value";
+
+        if (value === 0) {
+            valueLabel.classList.add("no-purchases");
+            valueLabel.textContent = "No purchases recorded";
+        } else {
+            valueLabel.textContent = analyticsMoney(value);
+        }
+
+        row.append(monthLabel, track, valueLabel);
+        container.appendChild(row);
+    });
+}
+
+
+
+function renderSpendingByItem(items, monthlyTotal) {
+    const container = document.getElementById("spendingByItemChart");
+    container.replaceChildren();
+
+    if (!Array.isArray(items) || items.length === 0) {
+        container.textContent =
+            "No recorded purchases for the current month.";
+        return;
+    }
+
+    items.forEach(item => {
+        const name = String(item.itemName || "Unnamed item");
+        const amount = Math.max(0, Number(item.totalSpent) || 0);
+
+        const share = monthlyTotal > 0
+            ? (amount / monthlyTotal) * 100
+            : 0;
+
+        const row = document.createElement("div");
+        row.className = "item-spending-row";
+
+        const heading = document.createElement("div");
+        heading.className = "item-spending-heading";
+
+        const label = document.createElement("span");
+        label.className = "item-spending-name";
+        label.textContent = name;
+
+        const total = document.createElement("span");
+        total.className = "item-spending-total";
+        total.textContent = analyticsMoney(amount);
+
+        heading.append(label, total);
+
+        const track = document.createElement("div");
+        track.className = "item-spending-track";
+
+        const bar = document.createElement("div");
+        bar.className = "item-spending-bar";
+        bar.style.width = `${Math.min(100, share)}%`;
+        bar.setAttribute("aria-hidden", "true");
+
+        track.appendChild(bar);
+
+        const shareLabel = document.createElement("span");
+        shareLabel.className = "item-spending-share";
+        shareLabel.textContent = `${share.toFixed(1)}% of monthly spending`;
+
+        row.append(heading, track, shareLabel);
+        container.appendChild(row);
+    });
+}
+
+function renderSpendingAnalytics(data) {
+    const status = document.getElementById("analyticsStatus");
+    const comparison = document.getElementById("spendingComparison");
+    const insights = document.getElementById("analyticsInsights");
+
+    const currentTotal = Number(data.currentMonthTotal) || 0;
+    const previousTotal = Number(data.previousMonthTotal) || 0;
+    const difference = Number(data.difference) || 0;
+    
+    
+    const purchaseCountElement = document.getElementById(
+        "currentMonthPurchaseCount"
+    );
+
+    if (purchaseCountElement) {
+        const items = Array.isArray(data.spendingByItem)
+            ? data.spendingByItem
+            : [];
+
+        if (items.length > 0) {
+            purchaseCountElement.textContent =
+                `${items.length} item${items.length === 1 ? "" : "s"} purchased this month`;
+        } else {
+            purchaseCountElement.textContent =
+                "No purchases recorded this month";
+        }
+    }
+
+
+    document.getElementById("analyticsPeriod").textContent =
+        `${formatAnalyticsMonth(data.monthlyTrend
+            ? Object.keys(data.monthlyTrend).sort()[0]
+            : data.currentMonth)} – ${formatAnalyticsMonth(data.currentMonth)}`;
+
+    document.getElementById("analyticsCurrentLabel").textContent =
+        formatAnalyticsMonth(data.currentMonth);
+
+    document.getElementById("analyticsPreviousLabel").textContent =
+        formatAnalyticsMonth(data.previousMonth);
+
+    document.getElementById("analyticsCurrentTotal").textContent =
+        analyticsMoney(currentTotal);
+
+    document.getElementById("analyticsPreviousTotal").textContent =
+        analyticsMoney(previousTotal);
+
+    const differenceElement =
+        document.getElementById("analyticsDifference");
+
+    differenceElement.textContent =
+        `${difference > 0 ? "+" : difference < 0 ? "−" : ""}` +
+        analyticsMoney(Math.abs(difference));
+
+    differenceElement.classList.toggle("spending-increased", difference > 0);
+    differenceElement.classList.toggle("spending-decreased", difference < 0);
+
+    const changeNote = document.getElementById("analyticsChangeNote");
+
+    if (data.percentageChange == null) {
+        changeNote.textContent = previousTotal === 0 && currentTotal > 0
+            ? "No percentage available: previous month had zero spending"
+            : "No percentage change available";
+    } else {
+        const percentage = Number(data.percentageChange);
+        changeNote.textContent =
+            `${percentage > 0 ? "+" : ""}${percentage.toFixed(2)}% vs previous month`;
+    }
+
+    renderMonthlyTrend(data.monthlyTrend);
+    renderSpendingByItem(data.spendingByItem, currentTotal);
+
+    const insightText = document.getElementById("analyticsInsightText");
+    const topItem = Array.isArray(data.spendingByItem)
+        ? data.spendingByItem[0]
+        : null;
+
+    let insight = "";
+
+    if (currentTotal === 0 && previousTotal === 0) {
+        insight = "No spending was recorded in either of the two months.";
+    } else if (previousTotal === 0 && currentTotal > 0) {
+        insight =
+            `Recorded spending this month is ${analyticsMoney(currentTotal)}. ` +
+            "The previous month had no recorded spending, so a percentage comparison is unavailable.";
+    } else if (difference > 0) {
+        insight =
+            `Spending increased by ${analyticsMoney(difference)} ` +
+            "compared with the previous month.";
+    } else if (difference < 0) {
+        insight =
+            `Spending decreased by ${analyticsMoney(Math.abs(difference))} ` +
+            "compared with the previous month.";
+    } else {
+        insight = "Recorded spending is unchanged from the previous month.";
+    }
+
+    if (topItem && currentTotal > 0) {
+        const itemAmount = Number(topItem.totalSpent) || 0;
+        const share = (itemAmount / currentTotal) * 100;
+
+        insight +=
+            ` ${topItem.itemName} is the highest-spending item at ` +
+            `${analyticsMoney(itemAmount)} (${share.toFixed(1)}% of this month's recorded spending).`;
+    }
+
+    insightText.textContent = insight;
+
+    comparison.hidden = false;
+    insights.hidden = false;
+    status.textContent = "";
+}
+
+function showAnalyticsError(error) {
+    console.error("Could not load spending analytics:", error);
+
+    const status = document.getElementById("analyticsStatus");
+    status.textContent =
+        "Spending analytics could not be loaded. Please try refreshing the page.";
+
+    document.getElementById("spendingComparison").hidden = true;
+    document.getElementById("analyticsInsights").hidden = true;
+
+    document.getElementById("monthlyTrendChart").replaceChildren();
+    document.getElementById("spendingByItemChart").replaceChildren();
+}
 
 async function loadDashboard() {
     
@@ -591,6 +799,15 @@ async function loadDashboard() {
             apiRequest(`${SPENDING_API}${queryParam}`),
             apiRequest(`${UPCOMING_API}${queryParam}`)
         ]);
+
+        // Analytics is loaded independently so an analytics failure
+        // does not prevent the existing dashboard from loading.
+        try {
+            const analytics = await apiRequest(SPENDING_ANALYTICS_API);
+            renderSpendingAnalytics(analytics);
+        } catch (analyticsError) {
+            showAnalyticsError(analyticsError);
+        }
 
         const items = Array.isArray(itemsResponse)
             ? itemsResponse
@@ -892,6 +1109,357 @@ document.addEventListener("click", event => {
 refreshNotifications();
 setInterval(refreshNotifications, 60000);
 
+/* ---------------- Household Invitations ---------------- */
+
+const INVITATIONS_API = "/household/invitations";
+
+const generateInvitationButton = document.getElementById(
+    "generateInvitationButton"
+);
+const copyInvitationButton = document.getElementById(
+    "copyInvitationButton"
+);
+const invitationResult = document.getElementById("invitationResult");
+const invitationCodeDisplay = document.getElementById(
+    "invitationCodeDisplay"
+);
+const invitationMessage = document.getElementById("invitationMessage");
+
+function setInvitationMessage(message, success = false) {
+    invitationMessage.textContent = message;
+    invitationMessage.style.color = success ? "#17642b" : "#b42318";
+}
+
+generateInvitationButton.addEventListener("click", async () => {
+    generateInvitationButton.disabled = true;
+    generateInvitationButton.textContent = "Generating...";
+    setInvitationMessage("");
+
+    try {
+        const result = await apiRequest(INVITATIONS_API, {
+            method: "POST",
+            body: JSON.stringify({})
+        });
+
+        if (!result?.invitationCode) {
+            throw new Error(
+                "The server did not return an invitation code."
+            );
+        }
+
+        invitationCodeDisplay.value = result.invitationCode;
+        invitationResult.hidden = false;
+        copyInvitationButton.hidden = false;
+
+        setInvitationMessage(
+            "Invitation created successfully. Share this code privately.",
+            true
+        );
+    } catch (error) {
+        console.error("Invitation generation failed:", error);
+
+        const message = String(error.message || "");
+
+        if (
+            message.includes("403") ||
+            message.toLowerCase().includes("forbidden") ||
+            message.toLowerCase().includes("owner")
+        ) {
+            setInvitationMessage(
+                "Only the household owner can generate invitations."
+            );
+        } else {
+            setInvitationMessage(
+                "Could not generate an invitation: " +
+                (message || "Please try again.")
+            );
+        }
+    } finally {
+        generateInvitationButton.disabled = false;
+        generateInvitationButton.textContent = "Generate Invitation";
+    }
+});
+
+copyInvitationButton.addEventListener("click", async () => {
+    const code = invitationCodeDisplay.value;
+
+    if (!code) {
+        setInvitationMessage("Generate an invitation first.");
+        return;
+    }
+
+    try {
+        await navigator.clipboard.writeText(code);
+        setInvitationMessage("Invitation code copied.", true);
+    } catch (error) {
+        // Fallback for browsers that block clipboard access.
+        invitationCodeDisplay.focus();
+        invitationCodeDisplay.select();
+
+        setInvitationMessage(
+            "Automatic copying is unavailable. Select the code and copy it manually."
+        );
+    }
+});
+
+/* ---------------- Household Members ---------------- */
+
+const HOUSEHOLD_MEMBERS_API = "/household/members";
+
+const householdMembersList = document.getElementById(
+    "householdMembersList"
+);
+
+const householdMembersStatus = document.getElementById(
+    "householdMembersStatus"
+);
+
+const refreshHouseholdMembersButton = document.getElementById(
+    "refreshHouseholdMembers"
+);
+
+function formatMemberJoinDate(value) {
+    if (!value) {
+        return "Join date unavailable";
+    }
+
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+        return "Join date unavailable";
+    }
+
+    return "Joined " + date.toLocaleDateString("en-IN", {
+        day: "numeric",
+        month: "short",
+        year: "numeric"
+    });
+}
+
+function renderHouseholdMembers(members) {
+    householdMembersList.replaceChildren();
+
+    if (!members.length) {
+        householdMembersStatus.textContent =
+            "No household members found.";
+        return;
+    }
+
+    householdMembersStatus.textContent =
+        `${members.length} household member(s) found.`;
+
+    members.forEach(member => {
+        const card = document.createElement("article");
+        card.className = "household-member-card";
+
+        const avatar = document.createElement("div");
+        avatar.className = "household-member-avatar";
+
+        const name = String(member.fullName || "Unknown user").trim();
+
+        avatar.textContent = name
+            ? name.charAt(0).toUpperCase()
+            : "?";
+
+        avatar.setAttribute("aria-hidden", "true");
+
+        const details = document.createElement("div");
+        details.className = "household-member-details";
+
+        const nameElement = document.createElement("h4");
+        nameElement.textContent = name;
+
+        const emailElement = document.createElement("p");
+        emailElement.className = "household-member-email";
+        emailElement.textContent = member.email || "Email unavailable";
+
+        const joinedElement = document.createElement("p");
+        joinedElement.className = "household-member-joined";
+        joinedElement.textContent = formatMemberJoinDate(
+            member.joinedAt
+        );
+
+        details.append(
+            nameElement,
+            emailElement,
+            joinedElement
+        );
+
+        const role = String(member.role || "MEMBER").toUpperCase();
+
+        const roleBadge = document.createElement("span");
+        roleBadge.className = "household-member-role";
+
+        if (role === "OWNER") {
+            roleBadge.classList.add("owner");
+            roleBadge.textContent = "Owner";
+        } else {
+            roleBadge.classList.add("member");
+            roleBadge.textContent = "Member";
+        }
+
+        card.append(avatar, details, roleBadge);
+        householdMembersList.appendChild(card);
+    });
+}
+
+async function loadHouseholdMembers() {
+    refreshHouseholdMembersButton.disabled = true;
+    refreshHouseholdMembersButton.textContent = "Loading...";
+
+    householdMembersStatus.textContent =
+        "Loading household members...";
+
+    try {
+        const result = await apiRequest(HOUSEHOLD_MEMBERS_API);
+
+        const members = Array.isArray(result?.members)
+            ? result.members
+            : [];
+
+        renderHouseholdMembers(members);
+
+    } catch (error) {
+        console.error("Could not load household members:", error);
+
+        householdMembersList.replaceChildren();
+
+        householdMembersStatus.textContent =
+            "Could not load household members. " +
+            "Please try refreshing.";
+
+    } finally {
+        refreshHouseholdMembersButton.disabled = false;
+        refreshHouseholdMembersButton.textContent = "Refresh";
+    }
+}
+
+refreshHouseholdMembersButton.addEventListener(
+    "click",
+    loadHouseholdMembers
+);
+
+loadHouseholdMembers();
+
+/* ---------------- Vendor Item Requests ---------------- */
+
+const HOUSEHOLD_REQUESTS_API = "/household/requests";
+
+const requestItemForm = document.getElementById("requestItemForm");
+const requestItemMessage = document.getElementById("requestItemMessage");
+const submitItemRequestButton =
+    document.getElementById("submitItemRequest");
+
+function showRequestItemMessage(message, success = false) {
+    if (!requestItemMessage) return;
+
+    requestItemMessage.textContent = message;
+    requestItemMessage.style.color = success ? "#17642b" : "#b42318";
+}
+
+if (requestItemForm) {
+    requestItemForm.addEventListener("submit", async function (event) {
+        event.preventDefault();
+
+        const itemName =
+            document.getElementById("requestItemName").value.trim();
+
+        const quantity = Number(
+            document.getElementById("requestQuantity").value
+        );
+
+        const unit =
+            document.getElementById("requestUnit").value;
+
+        const notes =
+            document.getElementById("requestNotes").value.trim();
+
+        if (!itemName) {
+            showRequestItemMessage("Please enter an item name.");
+            return;
+        }
+
+        if (!Number.isFinite(quantity) || quantity <= 0) {
+            showRequestItemMessage(
+                "Please enter a quantity greater than zero."
+            );
+            return;
+        }
+
+        // Property names match CreateRequestBody in the Java controller.
+        const requestBody = {
+            requestedItemName: itemName,
+            requestedQuantity: quantity,
+            unit: unit,
+            notes: notes || null
+        };
+
+        submitItemRequestButton.disabled = true;
+        submitItemRequestButton.textContent = "Submitting...";
+        showRequestItemMessage("");
+
+        try {
+            const result = await apiRequest(HOUSEHOLD_REQUESTS_API, {
+                method: "POST",
+                body: JSON.stringify(requestBody)
+            });
+
+            if (!result || !result.request) {
+                throw new Error("The server did not return the saved request.");
+            }
+
+            const savedRequest = result.request;
+
+            const requestId =
+                savedRequest.requestId ??
+                savedRequest.request_id;
+
+            const status = savedRequest.status;
+            const assigned = result.assigned;
+
+            let message = result.message ||
+                "Your item request was created.";
+
+            if (requestId != null) {
+                message += ` Request ID: ${requestId}.`;
+            }
+
+            if (status) {
+                message += ` Status: ${status}.`;
+            }
+
+            if (assigned === true) {
+                message += " A vendor has been assigned.";
+                showRequestItemMessage(message, true);
+            } else {
+                message += " No eligible vendor was found yet.";
+                showRequestItemMessage(message, false);
+            }
+
+            requestItemForm.reset();
+
+        } catch (error) {
+            console.error("Could not submit item request:", error);
+
+            showRequestItemMessage(
+                "Could not submit your request: " +
+                (error.message || "Please try again.")
+            );
+        } finally {
+            submitItemRequestButton.disabled = false;
+            submitItemRequestButton.textContent = "Submit Request";
+        }
+    });
+}
+async function logout() {
+    try {
+        await apiRequest("/auth/logout", { method: "POST" });
+    } catch (error) {
+        console.error("Logout request failed:", error);
+    } finally {
+        localStorage.removeItem("grocerymate_vendor_id");
+        localStorage.removeItem("grocerymate_role");
+        window.location.replace("index.html");
+    }
+}
 loadDashboard();
-
-

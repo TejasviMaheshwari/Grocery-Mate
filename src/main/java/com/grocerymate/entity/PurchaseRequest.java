@@ -1,16 +1,17 @@
+
 package com.grocerymate.entity;
 
 import jakarta.persistence.*;
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "purchase_requests")
-public class PurchaseRequests {
+public class PurchaseRequest {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "request_id", nullable = false)
+    @Column(name = "request_id")
     private Long requestId;
 
     @Column(name = "household_id", nullable = false)
@@ -26,7 +27,7 @@ public class PurchaseRequests {
     private String requestedItemName;
 
     @Column(name = "requested_quantity", nullable = false)
-    private java.math.BigDecimal requestedQuantity;
+    private BigDecimal requestedQuantity;
 
     @Column(name = "unit", nullable = false)
     private String unit;
@@ -34,26 +35,35 @@ public class PurchaseRequests {
     @Column(name = "assigned_buyer_id")
     private Long assignedBuyerId;
 
+    @Column(name = "assigned_vendor_id")
+    private Long assignedVendorId;
+
     @Column(name = "status", nullable = false)
     private String status;
 
     @Column(name = "requested_at", nullable = false)
-    private java.time.LocalDateTime requestedAt;
+    private LocalDateTime requestedAt;
 
     @Column(name = "claimed_at")
-    private java.time.LocalDateTime claimedAt;
+    private LocalDateTime claimedAt;
 
     @Column(name = "completed_at")
-    private java.time.LocalDateTime completedAt;
+    private LocalDateTime completedAt;
 
     @Column(name = "notes")
     private String notes;
 
-//    @Column(name = "ON")
-//    private String on;
+    public PurchaseRequest() {}
 
-
-    public PurchaseRequests() {}
+    @PrePersist
+    protected void onCreate() {
+        if (requestedAt == null) {
+            requestedAt = LocalDateTime.now();
+        }
+        if (status == null || status.isBlank()) {
+            status = "OPEN";
+        }
+    }
 
     public Long getRequestId() { return requestId; }
     public void setRequestId(Long requestId) { this.requestId = requestId; }
@@ -68,33 +78,46 @@ public class PurchaseRequests {
     public void setRequestedBy(Long requestedBy) { this.requestedBy = requestedBy; }
 
     public String getRequestedItemName() { return requestedItemName; }
-    public void setRequestedItemName(String requestedItemName) { this.requestedItemName = requestedItemName; }
+    public void setRequestedItemName(String requestedItemName) {
+        this.requestedItemName = requestedItemName;
+    }
 
-    public java.math.BigDecimal getRequestedQuantity() { return requestedQuantity; }
-    public void setRequestedQuantity(java.math.BigDecimal requestedQuantity) { this.requestedQuantity = requestedQuantity; }
+    public BigDecimal getRequestedQuantity() { return requestedQuantity; }
+    public void setRequestedQuantity(BigDecimal requestedQuantity) {
+        this.requestedQuantity = requestedQuantity;
+    }
 
     public String getUnit() { return unit; }
     public void setUnit(String unit) { this.unit = unit; }
 
     public Long getAssignedBuyerId() { return assignedBuyerId; }
-    public void setAssignedBuyerId(Long assignedBuyerId) { this.assignedBuyerId = assignedBuyerId; }
+    public void setAssignedBuyerId(Long assignedBuyerId) {
+        this.assignedBuyerId = assignedBuyerId;
+    }
+
+    public Long getAssignedVendorId() { return assignedVendorId; }
+    public void setAssignedVendorId(Long assignedVendorId) {
+        this.assignedVendorId = assignedVendorId;
+    }
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
 
-    public java.time.LocalDateTime getRequestedAt() { return requestedAt; }
-    public void setRequestedAt(java.time.LocalDateTime requestedAt) { this.requestedAt = requestedAt; }
+    public LocalDateTime getRequestedAt() { return requestedAt; }
+    public void setRequestedAt(LocalDateTime requestedAt) {
+        this.requestedAt = requestedAt;
+    }
 
-    public java.time.LocalDateTime getClaimedAt() { return claimedAt; }
-    public void setClaimedAt(java.time.LocalDateTime claimedAt) { this.claimedAt = claimedAt; }
+    public LocalDateTime getClaimedAt() { return claimedAt; }
+    public void setClaimedAt(LocalDateTime claimedAt) {
+        this.claimedAt = claimedAt;
+    }
 
-    public java.time.LocalDateTime getCompletedAt() { return completedAt; }
-    public void setCompletedAt(java.time.LocalDateTime completedAt) { this.completedAt = completedAt; }
+    public LocalDateTime getCompletedAt() { return completedAt; }
+    public void setCompletedAt(LocalDateTime completedAt) {
+        this.completedAt = completedAt;
+    }
 
     public String getNotes() { return notes; }
     public void setNotes(String notes) { this.notes = notes; }
-
-//    public String getOn() { return on; }
-//    public void setOn(String on) { this.on = on; }
-
 }

@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,11 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>GroceryMate | Vendor Dashboard</title>
     <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="vendor-edit-delete.css">
 </head>
 <body>
     <header>
         <h1>GroceryMate Vendor</h1>
-        <button onclick="logout()">Logout</button>
+        <button type="button" onclick="logout()">Logout</button>
     </header>
 
     <main>
@@ -30,37 +30,141 @@
         <section>
             <h2>Add Product</h2>
             <form id="productForm">
-                <input id="productName" placeholder="Product name" required>
-                <input id="category" placeholder="Category" required>
-                <input id="price" type="number" min="0.01"
-                       step="0.01" placeholder="Price in ₹" required>
-                <input id="stock" type="number" min="0"
-                       placeholder="Available stock" required>
+                <input id="productName" name="productName" placeholder="Product name" required maxlength="150">
+                <input id="category" name="category" placeholder="Category" required maxlength="100">
+                <input id="price" name="price" type="number" min="0.01" step="0.01" placeholder="Price in ₹" required>
+                <input id="stock" name="stock" type="number" min="0" step="1" placeholder="Available stock" required>
+                <div class="field">
+                    <label for="unit">Unit *</label>
+                    <select id="unit" name="unit" required>
+                        <option value="kg">Kilogram (kg)</option>
+                        <option value="g">Gram (g)</option>
+                        <option value="L">Litre (L)</option>
+                        <option value="ml">Millilitre (ml)</option>
+                        <option value="packet">Packet</option>
+                        <option value="piece">Piece</option>
+                        <option value="bottle">Bottle</option>
+                        <option value="unit">Unit</option>
+                    </select>
+                </div>
+                <textarea id="description" name="description" placeholder="Description (optional)" rows="2"></textarea>
                 <button type="submit">Save Product</button>
             </form>
-            <p id="message"></p>
+            <p id="message" role="status" aria-live="polite"></p>
         </section>
 
         <section>
             <h2>My Products</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Product</th>
-                        <th>Category</th>
-                        <th>Price</th>
-                        <th>Stock</th>
-                    </tr>
-                </thead>
-                <tbody id="productsBody"></tbody>
-            </table>
+            <div class="gm-table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Category</th>
+                            <th>Price</th>
+                            <th>Stock</th>
+                            <th>Availability</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="productsBody">
+                        <tr><td colspan="6">Loading products...</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </section>
 
-        <section>
-            <h2>Incoming Purchase Requests</h2>
-            <ul id="requestsList"></ul>
+        
+        <section id="purchase-requests-section" class="gm-workflow-section">
+            <div class="gm-workflow-heading">
+                <div>
+                    <h2>Incoming Purchase Requests</h2>
+                    <p>Review requests assigned to your store and accept eligible orders.</p>
+                </div>
+                <button type="button" id="refreshRequestsButton"
+                        class="gm-button gm-button--secondary">
+                    Refresh
+                </button>
+            </div>
+
+            <p id="requestsMessage" role="status" aria-live="polite"></p>
+            <ul id="requestsList" class="gm-workflow-list">
+                <li>Loading purchase requests...</li>
+            </ul>
         </section>
+
+        <section id="vendor-orders-section" class="gm-workflow-section">
+            <div class="gm-workflow-heading">
+                <div>
+                    <h2>My Orders</h2>
+                    <p>Track accepted requests and update order delivery status.</p>
+                </div>
+                <button type="button" id="refreshOrdersButton"
+                        class="gm-button gm-button--secondary">
+                    Refresh
+                </button>
+            </div>
+
+            <p id="ordersMessage" role="status" aria-live="polite"></p>
+            <ul id="vendorOrdersList" class="gm-workflow-list">
+                <li>Loading orders...</li>
+            </ul>
+        </section>
+
     </main>
+
+    <!-- Edit product popup -->
+    <div id="editProductModal" class="gm-modal" aria-hidden="true">
+        <div class="gm-modal__backdrop" data-close-modal="true"></div>
+        <section class="gm-modal__panel" role="dialog" aria-modal="true"
+                 aria-labelledby="editModalTitle">
+            <div class="gm-modal__header">
+                <div>
+                    <h2 id="editModalTitle">Edit Product</h2>
+                    <p>Update the product details below.</p>
+                </div>
+                <button type="button" class="gm-icon-button" id="closeEditModal"
+                        aria-label="Close edit dialog">&times;</button>
+            </div>
+
+            <form id="editProductForm">
+                <input id="editProductId" type="hidden">
+                <label for="editProductName">Product name</label>
+                <input id="editProductName" required maxlength="150">
+
+                <label for="editCategory">Category</label>
+                <input id="editCategory" required maxlength="100">
+
+                <div class="gm-form-grid">
+                    <div>
+                        <label for="editPrice">Price (₹)</label>
+                        <input id="editPrice" type="number" min="0.01" step="0.01" required>
+                    </div>
+                    <div>
+                        <label for="editStock">Available stock</label>
+                        <input id="editStock" type="number" min="0" step="1" required>
+                    </div>
+                </div>
+
+                <label for="editUnit">Unit</label>
+                <input id="editUnit" maxlength="30" placeholder="piece, kg, litre...">
+
+                <label for="editDescription">Description</label>
+                <textarea id="editDescription" rows="3"></textarea>
+
+                <label class="gm-availability-toggle">
+                    <input id="editAvailable" type="checkbox">
+                    <span>Product is available</span>
+                </label>
+
+                <p id="editMessage" class="gm-modal__message" role="status" aria-live="polite"></p>
+                <div class="gm-modal__actions">
+                    <button type="button" class="gm-button gm-button--secondary" id="cancelEdit">Cancel</button>
+                    <button type="submit" class="gm-button gm-button--primary" id="saveEditButton">Save Changes</button>
+                </div>
+            </form>
+        </section>
+    </div>
 
     <script src="api.js"></script>
     <script src="vendor-dashboard.js"></script>

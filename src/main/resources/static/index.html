@@ -71,13 +71,49 @@
               </div>
             </div>
 
+            
             <div id="householdFields">
               <div class="field">
-                <label for="householdName">Household name</label>
-                <input id="householdName" name="householdName" type="text" maxlength="120" placeholder="e.g. Sharma Family">
-                <small class="field-error" data-error-for="householdName"></small>
+                <label for="householdAction">Household registration</label>
+                <select id="householdAction" name="householdAction">
+                  <option value="CREATE">Create a new household</option>
+                  <option value="JOIN">Join an existing household</option>
+                </select>
+              </div>
+
+              <div id="createHouseholdFields">
+                <div class="field">
+                  <label for="householdName">Household name</label>
+                  <input
+                    id="householdName"
+                    name="householdName"
+                    type="text"
+                    maxlength="120"
+                    placeholder="e.g. Sharma Family"
+                  >
+                  <small class="field-error" data-error-for="householdName"></small>
+                </div>
+              </div>
+
+              <div id="joinHouseholdFields" hidden>
+                <div class="field">
+                  <label for="invitationCode">Invitation code</label>
+                  <input
+                    id="invitationCode"
+                    name="invitationCode"
+                    type="text"
+                    maxlength="12"
+                    autocomplete="off"
+                    placeholder="Enter the code from your household owner"
+                  >
+                  <small class="field-error" data-error-for="invitationCode"></small>
+                </div>
+                <small class="field-hint">
+                  The household owner must share a valid invitation code with you.
+                </small>
               </div>
             </div>
+
 
             <div class="field">
               <label for="phone">Phone number <span class="optional">(optional)</span></label>

@@ -31,6 +31,12 @@ public class VendorOrders {
     @Column(name = "unit", nullable = false)
     private String unit;
 
+    @Column(name = "vendor_product_id")
+    private Long vendorProductId;
+
+    @Column(name = "unit_price", precision = 10, scale = 2)
+    private BigDecimal unitPrice;
+
     @Column(name = "total_amount")
     private java.math.BigDecimal totalAmount;
 
@@ -49,8 +55,6 @@ public class VendorOrders {
     @Column(name = "notes")
     private String notes;
 
-//    @Column(name = "ON")
-//    private String on;
 
     public VendorOrders() {}
 
@@ -93,7 +97,9 @@ public class VendorOrders {
     public String getNotes() { return notes; }
     public void setNotes(String notes) { this.notes = notes; }
 
-//    public String getOn() { return on; }
-//    public void setOn(String on) { this.on = on; }
+    public Long getVendorProductId() {return vendorProductId;}
+    public void setVendorProductId(Long vendorProductId) {this.vendorProductId = vendorProductId;    }
 
+    public BigDecimal getUnitPrice() {return unitPrice;}
+    public void setUnitPrice(BigDecimal unitPrice) {this.unitPrice = unitPrice;}
 }

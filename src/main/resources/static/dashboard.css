@@ -1,35 +1,34 @@
+
+/* =========================================================
+   1. GLOBAL STYLES
+   ========================================================= */
+
+* {
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 150px;
+}
+
 body {
     margin: 0;
     font-family: Arial, sans-serif;
     background: #f4f8f4;
     color: #203329;
+    line-height: 1.5;
 }
 
-header {
-    background: #17643c;
-    color: white;
-    padding: 18px 5%;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
+[hidden] {
+    display: none !important;
 }
 
-header h1 {
-    margin: 0;
-}
-
-nav {
-    display: flex;
-    gap: 16px;
-    align-items: center;
-    flex-wrap: wrap;
-}
-
-nav a {
-    color: white;
-    text-decoration: none;
-    font-weight: 500;
+button,
+input,
+select,
+textarea {
+    font: inherit;
 }
 
 button {
@@ -41,11 +40,84 @@ button {
     cursor: pointer;
     font-size: 14px;
     font-weight: 600;
-    transition: background 0.2s ease;
+    transition: background 0.2s ease, transform 0.15s ease;
 }
 
 button:hover {
     background: #1c6d3f;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+    outline: 3px solid #75b991;
+    outline-offset: 3px;
+}
+
+button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+button.secondary {
+    background: #e8eee9;
+    color: #203329;
+}
+
+button.secondary:hover {
+    background: #d9e2db;
+}
+
+
+/* =========================================================
+   2. HEADER AND NAVIGATION
+   ========================================================= */
+
+header {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+
+    padding: 16px 5%;
+    background: #17643c;
+    color: white;
+
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
+}
+
+header h1 {
+    margin: 0;
+    font-size: clamp(24px, 3vw, 36px);
+    line-height: 1.2;
+}
+
+.dashboard-nav {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.dashboard-nav a,
+nav a {
+    color: white;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.dashboard-nav a:hover,
+nav a:hover {
+    text-decoration: underline;
+    text-underline-offset: 4px;
 }
 
 header button {
@@ -57,11 +129,50 @@ header button:hover {
     background: #eaf1ec;
 }
 
+
+/* =========================================================
+   3. MAIN LAYOUT AND SECTIONS
+   ========================================================= */
+
 main {
-    max-width: 1150px;
-    margin: 30px auto;
-    padding: 0 20px;
+    width: 100%;
+    max-width: 1400px;
+    margin: 24px auto;
+    padding: 0 24px;
 }
+
+main > section {
+    min-width: 0;
+    margin-bottom: 22px;
+    padding: 22px;
+
+    background: white;
+    border: 1px solid #edf1ed;
+    border-radius: 12px;
+
+    box-shadow: 0 2px 9px rgba(0, 0, 0, 0.04);
+}
+
+main > h2 {
+    margin-bottom: 8px;
+}
+
+main > p {
+    color: #556c5d;
+}
+
+section h2 {
+    color: #203329;
+}
+
+section h3 {
+    color: #344b3b;
+}
+
+
+/* =========================================================
+   4. DASHBOARD STATISTICS
+   ========================================================= */
 
 .stats {
     display: grid;
@@ -70,31 +181,41 @@ main {
     margin: 20px 0;
 }
 
-article, section {
-    background: white;
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 2px 9px rgba(0, 0, 0, 0.04);
-    margin-bottom: 20px;
-}
-
-article p {
-    font-size: 26px;
-    font-weight: bold;
-    color: #17643c;
-    margin: 8px 0 0 0;
-}
-
-article h3 {
+.stats article {
+    min-width: 0;
     margin: 0;
-    font-size: 14px;
-    color: #556c5d;
+    padding: 20px;
+
+    background: white;
+    border: 1px solid #e3ebe4;
+    border-radius: 12px;
+
+    box-shadow: 0 2px 9px rgba(0, 0, 0, 0.04);
 }
 
-/* Form Styles */
+.stats article h3 {
+    margin: 0;
+    color: #556c5d;
+    font-size: 14px;
+}
+
+.stats article p {
+    margin: 8px 0 0;
+    color: #17643c;
+    font-size: clamp(22px, 2.5vw, 28px);
+    font-weight: bold;
+    overflow-wrap: anywhere;
+}
+
+
+/* =========================================================
+   5. FORMS AND INPUT FIELDS
+   ========================================================= */
+
 form {
     display: block;
     width: 100%;
+    min-width: 0;
 }
 
 .form-grid {
@@ -107,6 +228,7 @@ form {
 .field {
     display: flex;
     flex-direction: column;
+    min-width: 0;
     gap: 7px;
 }
 
@@ -119,11 +241,13 @@ form {
 .field select {
     width: 100%;
     min-width: 0;
-    box-sizing: border-box;
     padding: 11px;
+
     border: 1px solid #ccd9ce;
     border-radius: 7px;
+
     background: white;
+    color: #203329;
     font-size: 14px;
 }
 
@@ -134,11 +258,17 @@ form {
     box-shadow: 0 0 0 2px rgba(35, 131, 78, 0.15);
 }
 
-/* Button Placement & Actions */
+.field small {
+    color: #68756d;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
 .form-actions {
     display: flex;
     align-items: center;
     justify-content: flex-start;
+    flex-wrap: wrap;
     gap: 12px;
     margin-top: 20px;
 }
@@ -149,48 +279,121 @@ form {
     font-size: 15px;
 }
 
-button.secondary {
-    background: #e8eee9;
-    color: #203329;
-}
-
-button.secondary:hover {
-    background: #d9e2db;
-}
-
-/* Table Styles */
-.table-scroll {
-    width: 100%;
-    overflow-x: auto;
-}
-
-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.table-scroll table {
-    min-width: 1000px;
-}
-
-th, td {
-    text-align: left;
-    padding: 12px;
-    border-bottom: 1px solid #e4ece5;
-}
-
-th {
-    background: #fafdfa;
+#message {
+    margin-top: 14px;
     font-weight: 600;
+    overflow-wrap: anywhere;
 }
 
-/* Stock Badges & Indicators */
+
+/* =========================================================
+   6. HOUSEHOLD ESSENTIALS TABLE
+   ========================================================= */
+
+#essentials {
+    min-width: 0;
+    scroll-margin-top: 150px;
+}
+
+#essentials > h2 {
+    margin-top: 0;
+    margin-bottom: 12px;
+}
+
+/* Stock duration legend */
+
+.legend {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0 0 16px;
+
+    color: #45574a;
+    font-size: 13px;
+}
+
+.stock-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    margin-left: 12px;
+    margin-right: 2px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.stock-dot:first-child {
+    margin-left: 0;
+}
+
+.stock-dot.green {
+    background: #23843e;
+}
+
+.stock-dot.amber {
+    background: #d99a00;
+}
+
+.stock-dot.red {
+    background: #d62828;
+}
+
+/* Table scrolling container.
+   IMPORTANT: HTML uses .table-scroll, not .table-container. */
+
+#essentials .table-scroll {
+    position: relative;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 6px;
+}
+
+/* Inventory table */
+
+#essentials table {
+    width: 100%;
+    min-width: 1150px;
+    border-collapse: separate;
+    border-spacing: 0;
+    table-layout: auto;
+}
+
+#essentials th,
+#essentials td {
+    padding: 10px 12px;
+    text-align: left;
+    vertical-align: middle;
+    border-bottom: 1px solid #e4ece5;
+    font-size: 13px;
+}
+
+#essentials th {
+    background: #fafdfa;
+    color: #263a2d;
+    font-weight: 700;
+    line-height: 1.3;
+    white-space: normal;
+}
+
+#essentials td {
+    overflow-wrap: anywhere;
+}
+
+/* Preserve readable stock values and badges */
+
 .stock-badge {
     display: inline-block;
+    max-width: 100%;
     padding: 6px 9px;
     border-radius: 20px;
-    font-weight: 700;
+
     font-size: 12px;
+    font-weight: 700;
+    line-height: 1.3;
     white-space: nowrap;
 }
 
@@ -209,240 +412,7 @@ th {
     color: #a01818;
 }
 
-.stock-dot {
-    display: inline-block;
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    margin-left: 12px;
-    margin-right: 4px;
-}
-
-.stock-dot:first-child {
-    margin-left: 0;
-}
-
-.stock-dot.green { background: #23843e; }
-.stock-dot.amber { background: #d99a00; }
-.stock-dot.red { background: #d62828; }
-
-.legend {
-    font-size: 13px;
-    color: #45574a;
-}
-
-/* Lists & Alerts */
-#alertsList,
-#upcomingList {
-    padding-left: 0;
-    list-style: none;
-}
-
-#alertsList li,
-#upcomingList li {
-    margin: 9px 0;
-    padding: 12px;
-    border-radius: 8px;
-}
-
-#alertsList li {
-    background: #fff0df;
-    border-left: 4px solid #d99a00;
-}
-
-#alertsList li.critical {
-    background: #ffebeb;
-    border-left-color: #d62828;
-}
-
-#upcomingList li {
-    background: #f0f7f2;
-    border-left: 4px solid #23834e;
-}
-
-#message {
-    margin-top: 14px;
-    font-weight: 600;
-    overflow-wrap: anywhere;
-}
-
-/* Responsive Breakpoints */
-@media (max-width: 800px) {
-    .form-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-    .stats {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-}
-
-@media (max-width: 480px) {
-    .form-grid {
-        grid-template-columns: 1fr;
-    }
-    .form-actions {
-        flex-direction: column;
-    }
-    .form-actions button {
-        width: 100%;
-    }
-    .stats {
-        grid-template-columns: 1fr 1fr;
-        gap: 8px;
-    }
-    article, section {
-        padding: 14px;
-    }
-}
-
-/* 
-body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background: #f4f8f4;
-    color: #203329;
-}
-
-header {
-    background: #17643c;
-    color: white;
-    padding: 18px 5%;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-}
-
-header h1 { margin: 0; }
-
-nav {
-    display: flex;
-    gap: 16px;
-    flex-wrap: wrap;
-}
-
-nav a {
-    color: white;
-    text-decoration: none;
-}
-
-button {
-    background: #23834e;
-    color: white;
-    border: none;
-    border-radius: 7px;
-    padding: 10px 15px;
-    cursor: pointer;
-}
-
-header button { background: white; color: #17643c; }
-
-main {
-    max-width: 1150px;
-    margin: 30px auto;
-    padding: 0 20px;
-}
-
-.stats {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 16px;
-    margin: 20px 0;
-}
-
-article, section {
-    background: white;
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 2px 9px #0000000b;
-    margin-bottom: 20px;
-}
-
-article p {
-    font-size: 26px;
-    font-weight: bold;
-    color: #17643c;
-}
-
-form {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-}
-
-input {
-    padding: 11px;
-    border: 1px solid #ccd9ce;
-    border-radius: 7px;
-    min-width: 140px;
-}
-
-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-th, td {
-    text-align: left;
-    padding: 12px;
-    border-bottom: 1px solid #e4ece5;
-}
-
-@media (max-width: 750px) {
-    .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    main { padding: 0 12px; }
-    table { font-size: 13px; }
-}
-
-@media (max-width: 420px) {
-    .stats { grid-template-columns: 1fr 1fr; gap: 8px; }
-    article, section { padding: 12px; }
-}
-
-/* Expanded household inventory form */
-.form-grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 16px;
-    margin: 20px 0;
-}
-
-.field {
-    display: flex;
-    flex-direction: column;
-    gap: 7px;
-}
-
-.field label {
-    font-size: 14px;
-    font-weight: 600;
-}
-
-.field input,
-.field select {
-    width: 100%;
-    min-width: 0;
-    box-sizing: border-box;
-    padding: 11px;
-    border: 1px solid #ccd9ce;
-    border-radius: 7px;
-    background: white;
-}
-
-button.secondary {
-    background: #e8eee9;
-    color: #203329;
-    margin-left: 6px;
-}
-
-.table-scroll {
-    width: 100%;
-    overflow-x: auto;
-}
-
-.table-scroll table {
-    min-width: 1100px;
-}
+/* Inventory row status colors */
 
 .stock-row-green {
     background: #eaf7ed;
@@ -456,46 +426,70 @@ button.secondary {
     background: #ffebeb;
 }
 
-.stock-badge {
+/* Keep the Actions column visible when scrolling horizontally.
+   This assumes Actions is the last column in each table row. */
+
+#essentials th:last-child,
+#essentials td:last-child {
+    position: sticky;
+    right: 0;
+    z-index: 2;
+
+    min-width: 150px;
+    background: #ffffff;
+    box-shadow: -5px 0 8px rgba(0, 0, 0, 0.06);
+}
+
+#essentials th:last-child {
+    z-index: 3;
+    background: #fafdfa;
+}
+
+/* Match the sticky Actions cell to the stock row */
+
+#essentials tr.stock-row-green td:last-child {
+    background: #eaf7ed;
+}
+
+#essentials tr.stock-row-amber td:last-child {
+    background: #fff5dc;
+}
+
+#essentials tr.stock-row-red td:last-child {
+    background: #ffebeb;
+}
+
+/* Keep action buttons readable and usable */
+
+#essentials td:last-child button {
     display: inline-block;
-    padding: 6px 9px;
-    border-radius: 20px;
-    font-weight: 700;
+    max-width: 100%;
+    margin: 3px 4px 3px 0;
+    padding: 8px 10px;
     font-size: 12px;
     white-space: nowrap;
 }
 
-.stock-badge.green {
-    background: #c8edcf;
-    color: #17642b;
+/* Ensure long item names do not force the whole page wider */
+
+#essentials td:first-child {
+    min-width: 90px;
 }
 
-.stock-badge.amber {
-    background: #ffe5a3;
-    color: #795500;
+
+/* =========================================================
+   7. LOW-STOCK ALERTS AND UPCOMING PURCHASES
+   ========================================================= */
+
+#alerts,
+#upcoming {
+    scroll-margin-top: 150px;
 }
 
-.stock-badge.red {
-    background: #ffcaca;
-    color: #a01818;
-}
-
-.stock-dot {
-    display: inline-block;
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    margin-left: 12px;
-    margin-right: 4px;
-}
-
-.stock-dot.green { background: #23843e; }
-.stock-dot.amber { background: #d99a00; }
-.stock-dot.red { background: #d62828; }
-
-.legend {
-    font-size: 13px;
-    color: #45574a;
+#alertsList,
+#upcomingList {
+    padding-left: 0;
+    list-style: none;
 }
 
 #alertsList li,
@@ -503,6 +497,7 @@ button.secondary {
     margin: 9px 0;
     padding: 12px;
     border-radius: 8px;
+    overflow-wrap: anywhere;
 }
 
 #alertsList li {
@@ -515,38 +510,27 @@ button.secondary {
     border-left-color: #d62828;
 }
 
-#message {
-    overflow-wrap: anywhere;
-}
-
-@media (max-width: 800px) {
-    .form-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-}
-
-@media (max-width: 480px) {
-    .form-grid {
-        grid-template-columns: 1fr;
-    }
-}
-
-/* Neutral styling for items awaiting enough usage data */
 #alertsList li.prediction-pending {
-    background-color: #f1f5f9;
+    background: #f1f5f9;
     color: #475569;
     border-left: 3px solid #94a3b8;
-    padding: 10px 12px;
-    margin: 9px 0;
-    border-radius: 5px;
+}
+
+#upcomingList li {
+    background: #f0f7f2;
+    border-left: 4px solid #23834e;
 }
 
 
-/* Notification bell and dropdown */
+/* =========================================================
+   8. NOTIFICATION BELL AND DROPDOWN
+   ========================================================= */
+
 .notification-area {
     position: relative;
     display: inline-flex;
     align-items: center;
+    flex-shrink: 0;
 }
 
 .notification-bell {
@@ -554,15 +538,17 @@ button.secondary {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 42px;
-    min-height: 42px;
+
+    min-width: 44px;
+    min-height: 44px;
     padding: 8px 12px;
+
     border: 1px solid #d8e2d8;
     border-radius: 10px;
-    background: #fff;
+
+    background: white;
     color: #244b35;
     font-size: 24px;
-    cursor: pointer;
 }
 
 .notification-bell:hover {
@@ -573,37 +559,38 @@ button.secondary {
     position: absolute;
     top: -6px;
     right: -6px;
+
     min-width: 20px;
     height: 20px;
     padding: 0 5px;
+
     border-radius: 999px;
     background: #c62828;
     color: white;
+
     font-size: 12px;
+    font-weight: 700;
     line-height: 20px;
     text-align: center;
-    font-weight: 700;
 }
 
 .notification-panel {
     position: absolute;
     top: calc(100% + 10px);
     right: 0;
-    z-index: 1000;
+    z-index: 1100;
+
     width: min(360px, calc(100vw - 32px));
-    max-height: 440px;
+    max-height: min(440px, calc(100dvh - 100px));
     overflow-y: auto;
+
     padding: 16px;
     border: 1px solid #dce5dc;
     border-radius: 14px;
-    background: #fff;
+
+    background: white;
     color: #253329;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.14);
-}
-
-.notification-panel[hidden],
-.notification-badge[hidden] {
-    display: none !important;
 }
 
 .notification-panel-header {
@@ -620,17 +607,20 @@ button.secondary {
 }
 
 .notification-text-button {
-    border: 0;
+    padding: 6px 8px;
     background: transparent;
     color: #24643b;
-    cursor: pointer;
     font-size: 13px;
 }
 
+.notification-text-button:hover {
+    background: #f0f7f1;
+}
+
 .notification-list {
-    list-style: none;
-    padding: 0;
     margin: 0;
+    padding: 0;
+    list-style: none;
 }
 
 .notification-item {
@@ -644,9 +634,9 @@ button.secondary {
 }
 
 .notification-item.unread {
-    background: #f3f8f3;
-    border-radius: 8px;
     padding: 12px 8px;
+    border-radius: 8px;
+    background: #f3f8f3;
 }
 
 .notification-message {
@@ -659,9 +649,11 @@ button.secondary {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
     gap: 8px;
-    font-size: 12px;
+
     color: #68766b;
+    font-size: 12px;
 }
 
 .notification-read-button {
@@ -670,19 +662,1036 @@ button.secondary {
     border-radius: 6px;
     background: white;
     color: #24643b;
-    cursor: pointer;
     font-size: 12px;
 }
 
 #notificationStatus {
-    font-size: 13px;
     margin: 6px 0;
+    font-size: 13px;
 }
 
-@media (max-width: 600px) {
+
+/* =========================================================
+   9. HOUSEHOLD MANAGEMENT AND INVITATIONS
+   ========================================================= */
+
+#household-management {
+    border: 1px solid #dce9df;
+    scroll-margin-top: 150px;
+}
+
+#household-management > p {
+    line-height: 1.6;
+}
+
+#invitationOwnerNotice {
+    margin: 14px 0;
+    padding: 12px;
+    border-radius: 8px;
+
+    background: #f0f7f2;
+    color: #365642;
+    font-size: 14px;
+}
+
+.invitation-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 16px 0;
+}
+
+#generateInvitationButton:disabled,
+#copyInvitationButton:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+#invitationResult {
+    margin-top: 18px;
+    padding: 16px;
+    border: 1px solid #cfe3d3;
+    border-radius: 10px;
+    background: #f5faf6;
+}
+
+#invitationResult label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+#invitationCodeDisplay {
+    width: 100%;
+    max-width: 360px;
+    padding: 12px;
+
+    border: 1px solid #ccd9ce;
+    border-radius: 7px;
+
+    background: white;
+    color: #17643c;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 2px;
+}
+
+#invitationMessage {
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+
+/* =========================================================
+   10. HOUSEHOLD MEMBERS
+   ========================================================= */
+
+.household-members-section {
+    margin-top: 24px;
+    padding: 20px;
+
+    border: 1px solid #e1e7e2;
+    border-radius: 14px;
+    background: white;
+}
+
+.household-members-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 12px;
+}
+
+.household-members-header h3 {
+    margin: 0 0 6px;
+    color: #20372a;
+}
+
+.household-members-header p {
+    margin: 0;
+    color: #68756d;
+    font-size: 14px;
+}
+
+#refreshHouseholdMembers {
+    flex-shrink: 0;
+}
+
+#householdMembersStatus {
+    margin: 12px 0;
+    color: #68756d;
+    font-size: 14px;
+}
+
+.household-members-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
+    gap: 12px;
+}
+
+.household-member-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    min-width: 0;
+    padding: 14px;
+
+    border: 1px solid #e5ebe6;
+    border-radius: 12px;
+    background: #fbfdfb;
+}
+
+.household-member-avatar {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+
+    background: #e0eee3;
+    color: #205c39;
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.household-member-details {
+    flex: 1;
+    min-width: 0;
+}
+
+.household-member-details h4 {
+    margin: 0 0 4px;
+    color: #26382b;
+    font-size: 15px;
+    overflow-wrap: anywhere;
+}
+
+.household-member-email,
+.household-member-joined {
+    margin: 3px 0;
+    color: #68756d;
+    font-size: 12px;
+    overflow-wrap: anywhere;
+}
+
+.household-member-role {
+    flex-shrink: 0;
+    padding: 5px 9px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.household-member-role.owner {
+    background: #dcece1;
+    color: #205c39;
+}
+
+.household-member-role.member {
+    background: #e8edf8;
+    color: #344f87;
+}
+
+
+/* =========================================================
+   11. SPENDING ANALYTICS
+   ========================================================= */
+
+.spending-analytics {
+    border: 1px solid #dce9df;
+    background: white;
+}
+
+.analytics-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.analytics-heading h2 {
+    margin: 0 0 6px;
+}
+
+.analytics-heading p {
+    margin: 0;
+    color: #68756d;
+    line-height: 1.5;
+}
+
+.analytics-period {
+    display: inline-block;
+    padding: 7px 11px;
+    border-radius: 20px;
+
+    background: #edf6ef;
+    color: #205c39;
+
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.analytics-status {
+    color: #68756d;
+    font-size: 14px;
+}
+
+.spending-comparison {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+    margin: 20px 0;
+}
+
+.analytics-stat {
+    min-width: 0;
+    margin: 0;
+    padding: 18px;
+
+    border: 1px solid #e3ebe4;
+    border-radius: 12px;
+
+    background: #fbfdfb;
+    box-shadow: none;
+}
+
+.analytics-stat h3 {
+    margin: 0 0 10px;
+    color: #68756d;
+    font-size: 13px;
+}
+
+.analytics-stat p {
+    margin: 0 0 8px;
+    color: #205c39;
+    font-size: clamp(20px, 2.5vw, 27px);
+    overflow-wrap: anywhere;
+}
+
+.analytics-stat span {
+    display: block;
+    color: #68756d;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.analytics-stat .spending-increased {
+    color: #b42318;
+}
+
+.analytics-stat .spending-decreased {
+    color: #17642b;
+}
+
+.analytics-stat .purchase-count {
+    margin-top: 5px;
+    color: #64756b;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.5;
+}
+
+.trend-value.no-purchases {
+    color: #6b7c72;
+    font-size: 11px;
+    font-weight: 500;
+    white-space: normal;
+}
+
+
+/* =========================================================
+   12. ANALYTICS INSIGHTS
+   ========================================================= */
+
+.analytics-insights {
+    margin: 18px 0 22px;
+    padding: 16px 18px;
+
+    border: 1px solid #dce9df;
+    border-left: 4px solid #23834e;
+    border-radius: 10px;
+
+    background: #f5faf6;
+}
+
+.analytics-insights h3 {
+    margin: 0 0 8px;
+    color: #205c39;
+    font-size: 15px;
+}
+
+.analytics-insights p {
+    margin: 0;
+    color: #344b3b;
+    line-height: 1.65;
+    overflow-wrap: anywhere;
+}
+
+
+/* =========================================================
+   13. ANALYTICS CHARTS
+   ========================================================= */
+
+.analytics-charts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: 18px;
+}
+
+.analytics-chart-card {
+    min-width: 0;
+    margin: 0;
+    padding: 18px;
+
+    border: 1px solid #e3ebe4;
+    border-radius: 12px;
+
+    background: white;
+    box-shadow: none;
+}
+
+.analytics-chart-card h3 {
+    margin: 0 0 6px;
+    color: #203329;
+    font-size: 16px;
+}
+
+.analytics-description {
+    margin: 0 0 20px;
+    color: #68756d;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.monthly-trend-chart,
+.spending-item-chart {
+    display: flex;
+    flex-direction: column;
+    gap: 17px;
+    min-width: 0;
+}
+
+.trend-row {
+    display: grid;
+    grid-template-columns: 55px minmax(40px, 1fr) minmax(75px, auto);
+    align-items: center;
+    gap: 10px;
+}
+
+.trend-month,
+.trend-total {
+    color: #526257;
+    font-size: 12px;
+}
+
+.trend-total {
+    color: #203329;
+    font-weight: 700;
+    text-align: right;
+    overflow-wrap: anywhere;
+}
+
+.trend-track,
+.item-spending-track {
+    width: 100%;
+    height: 10px;
+    overflow: hidden;
+    border-radius: 20px;
+    background: #edf2ee;
+}
+
+.trend-bar,
+.item-spending-bar {
+    height: 100%;
+    border-radius: inherit;
+    background: #23834e;
+    transition: width 0.3s ease;
+}
+
+.item-spending-row {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+}
+
+.item-spending-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+}
+
+.item-spending-name {
+    min-width: 0;
+    color: #344b3b;
+    font-size: 13px;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+.item-spending-total {
+    flex-shrink: 0;
+    color: #203329;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.item-spending-bar {
+    background: #4b8c68;
+}
+
+.item-spending-share {
+    color: #68756d;
+    font-size: 11px;
+}
+
+
+/* =========================================================
+   14. TABLET RESPONSIVENESS
+   ========================================================= */
+
+@media (max-width: 1000px) {
+    main {
+        padding-right: 18px;
+        padding-left: 18px;
+    }
+
+    header {
+        padding-right: 4%;
+        padding-left: 4%;
+    }
+
+    .dashboard-nav {
+        gap: 10px;
+    }
+
+    .stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .form-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .analytics-charts {
+        grid-template-columns: 1fr;
+    }
+
+    .spending-comparison {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    #essentials th,
+    #essentials td {
+        padding: 9px 8px;
+    }
+}
+
+
+/* =========================================================
+   15. MOBILE RESPONSIVENESS
+   ========================================================= */
+
+@media (max-width: 768px) {
+    html {
+        scroll-padding-top: 180px;
+    }
+
+    header {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 12px;
+        padding: 14px 18px;
+    }
+
+    header h1 {
+        font-size: 28px;
+    }
+
+    .dashboard-nav {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        width: 100%;
+        gap: 10px;
+    }
+
+    .dashboard-nav a {
+        font-size: 14px;
+    }
+
+    main {
+        margin: 18px auto;
+        padding: 0 12px;
+    }
+
+    main > section {
+        padding: 16px;
+        margin-bottom: 16px;
+    }
+
+    .form-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+    }
+
+    .stats article {
+        padding: 14px;
+    }
+
+    .stats article p {
+        font-size: 23px;
+    }
+
+    .analytics-charts {
+        grid-template-columns: 1fr;
+    }
+
+    .spending-comparison {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .analytics-chart-card {
+        padding: 15px;
+    }
+
     .notification-panel {
         position: fixed;
-        top: 75px;
+        top: 90px;
         right: 12px;
+        width: min(360px, calc(100vw - 24px));
+        max-height: calc(100dvh - 110px);
+    }
+
+    .household-members-section {
+        padding: 15px;
+    }
+
+    .household-members-list {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    /* Keep the inventory scroll inside its own container */
+    #essentials .table-scroll {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: auto;
+    }
+
+    #essentials table {
+        min-width: 1150px;
+    }
+
+    #essentials th,
+    #essentials td {
+        padding: 10px;
+        font-size: 13px;
+    }
+
+    #essentials th:last-child,
+    #essentials td:last-child {
+        min-width: 130px;
+    }
+
+    .trend-row {
+        grid-template-columns: 45px minmax(30px, 1fr) minmax(65px, auto);
+        gap: 7px;
+    }
+
+    .trend-month,
+    .trend-total {
+        font-size: 11px;
+    }
+
+    .analytics-stat {
+        padding: 15px;
+    }
+}
+
+
+/* =========================================================
+   16. SMALL MOBILE SCREENS
+   ========================================================= */
+
+@media (max-width: 480px) {
+    html {
+        scroll-padding-top: 200px;
+    }
+
+    header {
+        padding: 12px;
+    }
+
+    header h1 {
+        font-size: 25px;
+    }
+
+    .dashboard-nav {
+        gap: 8px;
+    }
+
+    .dashboard-nav a {
+        font-size: 13px;
+    }
+
+    .dashboard-nav > button {
+        padding: 9px 12px;
+    }
+
+    main {
+        margin: 12px auto;
+        padding: 0 8px;
+    }
+
+    main > section {
+        padding: 12px;
+        border-radius: 10px;
+    }
+
+    .stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    .stats article {
+        padding: 12px;
+    }
+
+    .stats article h3 {
+        font-size: 12px;
+    }
+
+    .stats article p {
+        font-size: 21px;
+    }
+
+    .form-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .form-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .form-actions button {
+        width: 100%;
+    }
+
+    .invitation-actions {
+        flex-direction: column;
+    }
+
+    .invitation-actions button {
+        width: 100%;
+    }
+
+    .household-members-section {
+        padding: 12px;
+    }
+
+    .household-members-header {
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .household-member-card {
+        gap: 9px;
+        padding: 11px;
+    }
+
+    .household-member-role {
+        font-size: 11px;
+    }
+
+    .spending-comparison {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .analytics-chart-card {
+        padding: 12px;
+    }
+
+    .analytics-stat {
+        padding: 13px;
+    }
+
+    .item-spending-heading {
+        gap: 8px;
+    }
+
+    .item-spending-name,
+    .item-spending-total {
+        font-size: 12px;
+    }
+
+    .notification-panel {
+        top: 80px;
+        right: 8px;
+        width: calc(100vw - 16px);
+    }
+
+    #essentials .legend {
+        align-items: flex-start;
+        gap: 6px;
+        line-height: 1.7;
+    }
+
+    #essentials th:last-child,
+    #essentials td:last-child {
+        min-width: 125px;
+    }
+}
+
+
+/* =========================================================
+   17. VERY NARROW SCREENS
+   ========================================================= */
+
+@media (max-width: 350px) {
+    .dashboard-nav {
+        gap: 7px;
+    }
+
+    .dashboard-nav a {
+        font-size: 12px;
+    }
+
+    .stats article {
+        padding: 9px;
+    }
+
+    .stats article h3 {
+        font-size: 11px;
+    }
+
+    .stats article p {
+        font-size: 19px;
+    }
+
+    .notification-bell {
+        min-width: 40px;
+        min-height: 40px;
+    }
+}
+
+/* =========================================
+   HOUSEHOLD ESSENTIALS TABLE
+   Laptop + Mobile Responsive Design
+========================================= */
+
+#essentials {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+#essentials h2 {
+    margin-top: 0;
+    margin-bottom: 16px;
+    color: #203329;
+    font-size: clamp(20px, 2vw, 26px);
+}
+
+#essentials .legend {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 14px;
+    margin-bottom: 18px;
+}
+
+/* The actual wrapper used by your HTML */
+#essentials .table-scroll {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 8px;
+    scrollbar-width: thin;
+    scrollbar-color: #8b9990 #edf2ee;
+}
+
+/* Table sizing */
+#essentials .table-scroll table {
+    width: 100%;
+    min-width: 1050px;
+    border-collapse: separate;
+    border-spacing: 0;
+    table-layout: auto;
+}
+
+/* Table cells */
+#essentials .table-scroll th,
+#essentials .table-scroll td {
+    box-sizing: border-box;
+    padding: 12px 10px;
+    text-align: left;
+    vertical-align: middle;
+    border-bottom: 1px solid #dfe8e0;
+    overflow-wrap: anywhere;
+    line-height: 1.4;
+}
+
+#essentials .table-scroll th {
+    background: #f7fbf8;
+    color: #263b2d;
+    font-size: 13px;
+    font-weight: 700;
+    white-space: normal;
+}
+
+#essentials .table-scroll td {
+    color: #26372c;
+    font-size: 13px;
+}
+
+/* Subtle row colors remain visible */
+#essentials .table-scroll tbody tr:last-child td {
+    border-bottom: none;
+}
+
+#essentials .table-scroll tbody tr:hover {
+    filter: brightness(0.98);
+}
+
+/* Stock badges */
+#essentials .stock-badge {
+    display: inline-block;
+    max-width: 100%;
+    padding: 6px 9px;
+    border-radius: 20px;
+    font-size: 11px;
+    line-height: 1.3;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+/* =========================================
+   ACTIONS COLUMN — COMPACT AND VISIBLE
+========================================= */
+
+#essentials .table-scroll th:last-child,
+#essentials .table-scroll td:last-child {
+    width: 88px;
+    min-width: 88px;
+    max-width: 88px;
+    padding: 8px 6px;
+    text-align: center;
+    white-space: normal;
+}
+
+/* Consume button */
+#essentials .table-scroll td:last-child button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    max-width: 76px;
+    min-width: 0;
+    min-height: 36px;
+    padding: 8px 5px;
+    margin: 0;
+    border-radius: 7px;
+    background: #23834e;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.2;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+#essentials .table-scroll td:last-child button:hover {
+    background: #17643c;
+}
+
+/* =========================================
+   LAPTOPS AND DESKTOPS
+========================================= */
+
+@media (min-width: 769px) {
+    #essentials .table-scroll table {
+        min-width: 1050px;
+    }
+
+    #essentials .table-scroll th,
+    #essentials .table-scroll td {
+        padding: 10px 8px;
+        font-size: 12px;
+    }
+
+    #essentials .table-scroll th:last-child,
+    #essentials .table-scroll td:last-child {
+        width: 84px;
+        min-width: 84px;
+        max-width: 84px;
+        padding: 8px 5px;
+    }
+
+    #essentials .table-scroll td:last-child button {
+        max-width: 74px;
+        font-size: 11px;
+    }
+}
+
+/* =========================================
+   MOBILE
+========================================= */
+
+@media (max-width: 768px) {
+    #essentials {
+        padding: 14px;
+    }
+
+    #essentials .table-scroll table {
+        /*
+         * Preserve readable data columns.
+         * Swipe horizontally to see the remaining columns.
+         */
+        min-width: 1000px;
+    }
+
+    #essentials .table-scroll th,
+    #essentials .table-scroll td {
+        padding: 10px 7px;
+        font-size: 12px;
+    }
+
+    #essentials .table-scroll th:last-child,
+    #essentials .table-scroll td:last-child {
+        width: 70px;
+        min-width: 70px;
+        max-width: 70px;
+        padding: 7px 4px;
+    }
+
+    #essentials .table-scroll td:last-child button {
+        width: 100%;
+        max-width: 62px;
+        min-height: 34px;
+        padding: 7px 3px;
+        font-size: 11px;
+    }
+
+    #essentials .stock-dot {
+        margin-left: 0;
+    }
+}
+
+/* =========================================
+   SMALL PHONES
+========================================= */
+
+@media (max-width: 420px) {
+    #essentials {
+        padding: 12px;
+    }
+
+    #essentials .legend {
+        font-size: 12px;
+        gap: 8px 10px;
+    }
+
+    #essentials .table-scroll table {
+        min-width: 960px;
+    }
+
+    #essentials .table-scroll th,
+    #essentials .table-scroll td {
+        padding: 9px 6px;
+        font-size: 11px;
+    }
+
+    #essentials .table-scroll th:last-child,
+    #essentials .table-scroll td:last-child {
+        width: 64px;
+        min-width: 64px;
+        max-width: 64px;
+        padding: 6px 3px;
+    }
+
+    #essentials .table-scroll td:last-child button {
+        max-width: 58px;
+        min-height: 32px;
+        padding: 6px 2px;
+        font-size: 10px;
     }
 }

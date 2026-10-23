@@ -10,7 +10,7 @@ import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
-
+import org.springframework.security.core.Authentication;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
 import java.util.Map;
@@ -42,6 +42,7 @@ public class AuthController {
         this.passwordEncoder = passwordEncoder;
     }
 
+
     @PostMapping("/signup/user")
     @Transactional
     public ResponseEntity<?> registerUser(
@@ -53,44 +54,83 @@ public class AuthController {
                 || request.getEmail().isBlank()
                 || request.getPassword() == null
                 || request.getPassword().length() < 8) {
-            return error(HttpStatus.BAD_REQUEST,
-                    "Name, email and a password of at least 8 characters are required.");
+
+            return error(
+                    HttpStatus.BAD_REQUEST,
+                    "Name, email and a password of at least 8 characters are required."
+            );
         }
 
         String email = request.getEmail().trim().toLowerCase();
 
         if (emailExists(email)) {
-            return error(HttpStatus.CONFLICT,
-                    "An account with this email already exists.");
+            return error(
+                    HttpStatus.CONFLICT,
+                    "An account with this email already exists."
+            );
         }
 
+        // Backward compatibility: older frontend requests default to CREATE.
+        String householdAction = request.getHouseholdAction();
+
+        if (householdAction == null || householdAction.isBlank()) {
+            householdAction = "CREATE";
+        } else {
+            householdAction = householdAction.trim().toUpperCase();
+        }
+
+        if (!"CREATE".equals(householdAction)
+                && !"JOIN".equals(householdAction)) {
+
+            return error(
+                    HttpStatus.BAD_REQUEST,
+                    "householdAction must be CREATE or JOIN."
+            );
+        }
+
+        // Create the user account.
         String userSql = """
-            INSERT INTO users
-                (full_name, email, password_hash, phone,
-                 account_status, created_at, updated_at)
-            VALUES (?, ?, ?, ?, 'ACTIVE', NOW(), NOW())
-            """;
+        INSERT INTO users
+            (full_name, email, password_hash, phone,
+             account_status, created_at, updated_at)
+        VALUES (?, ?, ?, ?, 'ACTIVE', NOW(), NOW())
+        """;
 
         KeyHolder userKey = new GeneratedKeyHolder();
 
         jdbc.update(connection -> {
             PreparedStatement ps = connection.prepareStatement(
-                    userSql, Statement.RETURN_GENERATED_KEYS);
+                    userSql, Statement.RETURN_GENERATED_KEYS
+            );
+
             ps.setString(1, request.getFullName().trim());
             ps.setString(2, email);
             ps.setString(3,
                     passwordEncoder.encode(request.getPassword()));
             ps.setString(4, request.getPhone());
+
             return ps;
         }, userKey);
 
         Number generatedUserId = userKey.getKey();
+
         if (generatedUserId == null) {
             throw new IllegalStateException("Could not create user.");
         }
 
         long userId = generatedUserId.longValue();
 
+        // JOIN: leave the user without household membership for now.
+        if ("JOIN".equals(householdAction)) {
+            return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
+                    "message",
+                    "Account registered successfully. Log in and accept a household invitation to join.",
+                    "userId", userId,
+                    "householdAction", "JOIN"
+            ));
+        }
+
+        // CREATE: create a new household and make the user its owner.
         String householdName =
                 request.getHouseholdName() != null
                         && !request.getHouseholdName().isBlank()
@@ -98,32 +138,41 @@ public class AuthController {
                         : request.getFullName().trim() + "'s Household";
 
         jdbc.update("""
-            INSERT INTO households
-                (household_name, head_user_id, address,
-                 city, state, pincode, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())
-            """,
-                householdName, userId, request.getAddress(),
-                request.getCity(), request.getState(),
+        INSERT INTO households
+            (household_name, head_user_id, address,
+             city, state, pincode, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())
+        """,
+                householdName,
+                userId,
+                request.getAddress(),
+                request.getCity(),
+                request.getState(),
                 request.getPincode());
 
         Long householdId = jdbc.queryForObject("""
-            SELECT household_id FROM households
-            WHERE head_user_id = ?
-            ORDER BY household_id DESC LIMIT 1
-            """, Long.class, userId);
+        SELECT household_id
+        FROM households
+        WHERE head_user_id = ?
+        ORDER BY household_id DESC
+        LIMIT 1
+        """, Long.class, userId);
 
-        // Also register the owner as a household member.
+        if (householdId == null) {
+            throw new IllegalStateException("Could not create household.");
+        }
+
         jdbc.update("""
-            INSERT INTO household_members
-                (household_id, user_id, member_role)
-            VALUES (?, ?, 'OWNER')
-            """, householdId, userId);
+        INSERT INTO household_members
+            (household_id, user_id, member_role)
+        VALUES (?, ?, 'OWNER')
+        """, householdId, userId);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
                 "message", "Household account registered successfully.",
                 "userId", userId,
-                "householdId", householdId
+                "householdId", householdId,
+                "householdAction", "CREATE"
         ));
     }
 
@@ -257,18 +306,22 @@ public class AuthController {
                     "Invalid email or password.");
         }
 
+
         var households = jdbc.queryForList("""
-            SELECT household_id FROM households
-            WHERE head_user_id = ?
-            ORDER BY household_id
+            SELECT household_id
+            FROM household_members
+            WHERE user_id = ?
+            ORDER BY household_member_id
             LIMIT 1
             """, userId);
 
-        Object householdId = households.isEmpty()
-                ? null : households.get(0).get("household_id");
-        Long sessionHouseholdId = householdId == null
-                ? null
-                : ((Number) householdId).longValue();
+            Object householdId = households.isEmpty()
+                    ? null
+                    : households.get(0).get("household_id");
+
+            Long sessionHouseholdId = householdId == null
+                    ? null
+                    : ((Number) householdId).longValue();
 
         establishSession(
                 request,
@@ -403,6 +456,39 @@ public class AuthController {
         repository.saveContext(context, request, response);
     }
 
+    @GetMapping("/session")
+    public ResponseEntity<?> getSession(Authentication authentication) {
+
+        if (authentication == null
+                || !authentication.isAuthenticated()
+                || !(authentication.getPrincipal()
+                instanceof AuthenticatedAccount account)) {
+
+            return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of(
+                            "message", "Not logged in."
+                    ));
+        }
+
+        Map<String, Object> sessionData = new java.util.HashMap<>();
+
+        sessionData.put("id", account.id());
+        sessionData.put("role", account.role());
+
+        if ("VENDOR".equalsIgnoreCase(account.role())) {
+            sessionData.put("vendorId", account.id());
+        } else {
+            sessionData.put("userId", account.id());
+
+            if (account.householdId() != null) {
+                sessionData.put("householdId", account.householdId());
+            }
+        }
+
+        return ResponseEntity.ok(sessionData);
+    }
+
     @PostMapping("/logout")
     public ResponseEntity<?> logout(
             HttpServletRequest request) {
@@ -421,307 +507,3 @@ public class AuthController {
     }
 
 }
-
-//package com.grocerymate.controller;
-//
-//import com.grocerymate.dto.RegisterRequest;
-//import org.springframework.http.ResponseEntity;
-//import org.springframework.jdbc.core.JdbcTemplate;
-//import org.springframework.web.bind.annotation.*;
-//import org.springframework.jdbc.support.GeneratedKeyHolder;
-//import org.springframework.jdbc.support.KeyHolder;
-//import java.sql.PreparedStatement;
-//import java.sql.Statement;
-//import java.util.Map;
-//
-//@RestController
-//@CrossOrigin(origins = "*")
-//@RequestMapping("/api/auth")
-//public class AuthController {
-//
-//    private final JdbcTemplate jdbcTemplate;
-//
-//    public AuthController(JdbcTemplate jdbcTemplate) {
-//        this.jdbcTemplate = jdbcTemplate;
-//    }
-//
-//    // 1. HOUSEHOLD / USER SIGNUP (Saves strictly to `users`)
-//    // 1. HOUSEHOLD / USER SIGNUP -> Writes to users AND households
-//    @PostMapping("/signup/user")
-//    public ResponseEntity<?> registerUser(@RequestBody RegisterRequest request) {
-//        // Step A: Insert user credentials into users table
-//        String userSql = """
-//            INSERT INTO users (full_name, email, password_hash, phone, account_status, created_at, updated_at)
-//            VALUES (?, ?, ?, ?, 'ACTIVE', NOW(), NOW())
-//        """;
-//
-//        KeyHolder keyHolder = new GeneratedKeyHolder();
-//
-//        jdbcTemplate.update(connection -> {
-//            PreparedStatement ps = connection.prepareStatement(userSql, Statement.RETURN_GENERATED_KEYS);
-//            ps.setString(1, request.getFullName());
-//            ps.setString(2, request.getEmail());
-//            ps.setString(3, request.getPassword());
-//            ps.setString(4, request.getPhone());
-//            return ps;
-//        }, keyHolder);
-//
-//        long newUserId = keyHolder.getKey().longValue();
-//
-//        // Step B: Insert household details into households table
-//        String householdSql = """
-//            INSERT INTO households (
-//                household_name, head_user_id, address, city, state, pincode, created_at, updated_at
-//            )
-//            VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())
-//        """;
-//
-//        String householdName = (request.getHouseholdName() != null && !request.getHouseholdName().isBlank())
-//                ? request.getHouseholdName()
-//                : (request.getFullName() + "'s Household");
-//
-//        jdbcTemplate.update(householdSql,
-//                householdName,
-//                newUserId,
-//                request.getAddress(),
-//                request.getCity(),
-//                request.getState(),
-//                request.getPincode()
-//        );
-//
-//        return ResponseEntity.ok(Map.of("message", "Household account registered successfully!"));
-//    }
-//
-//    // 2. VENDOR SIGNUP (Saves strictly to `vendors`)
-//    @PostMapping("/signup/vendor")
-//    public ResponseEntity<?> registerVendor(@RequestBody RegisterRequest request) {
-//        String sql = """
-//            INSERT INTO vendors (
-//                vendor_name, shop_name, email, password_hash,
-//                phone, address, city, state, pincode, is_active,
-//                created_at, updated_at
-//            )
-//            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW(), NOW())
-//        """;
-//
-//        String shopName = (request.getShopName() != null && !request.getShopName().isBlank())
-//                ? request.getShopName()
-//                : request.getFullName();
-//
-//        jdbcTemplate.update(sql,
-//                request.getFullName(),
-//                shopName,
-//                request.getEmail(),
-//                request.getPassword(),
-//                request.getPhone(),
-//                request.getAddress(),
-//                request.getCity(),
-//                request.getState(),
-//                request.getPincode()
-//        );
-//
-//        return ResponseEntity.ok(Map.of("message", "Vendor account registered successfully!"));
-//    }
-//
-//    // 3. SEPARATED LOGIN ENDPOINT
-//    @PostMapping("/login")
-//    public ResponseEntity<?> login(@RequestBody Map<String, String> credentials) {
-//        String email = credentials.get("email");
-//        String password = credentials.get("password");
-//        String role = credentials.get("role"); // "user" or "vendor"
-//
-//        if ("vendor".equalsIgnoreCase(role)) {
-//            // Check only the vendors table
-//            String sql = "SELECT vendor_id, vendor_name, password_hash FROM vendors WHERE email = ?";
-//            var rows = jdbcTemplate.queryForList(sql, email);
-//
-//            if (rows.isEmpty()) {
-//                return ResponseEntity.status(401).body(Map.of("message", "No vendor account found with this email."));
-//            }
-//
-//            String dbPassword = (String) rows.get(0).get("password_hash");
-//            if (!password.equals(dbPassword)) {
-//                return ResponseEntity.status(401).body(Map.of("message", "Invalid email or password."));
-//            }
-//
-//            return ResponseEntity.ok(Map.of(
-//                    "message", "Vendor login successful!",
-//                    "role", "VENDOR",
-//                    "vendorId", rows.get(0).get("vendor_id")
-//            ));
-//        } else {
-//            // Check only the users table (Households)
-//            String sql = "SELECT user_id, full_name, password_hash FROM users WHERE email = ?";
-//            var rows = jdbcTemplate.queryForList(sql, email);
-//
-//            if (rows.isEmpty()) {
-//                return ResponseEntity.status(401).body(Map.of("message", "No household account found with this email."));
-//            }
-//
-//            String dbPassword = (String) rows.get(0).get("password_hash");
-//            if (!password.equals(dbPassword)) {
-//                return ResponseEntity.status(401).body(Map.of("message", "Invalid email or password."));
-//            }
-//
-//            // Query household_id linked to this user
-//            String householdSql = "SELECT household_id FROM households WHERE head_user_id = ?";
-//            var householdRows = jdbcTemplate.queryForList(householdSql, rows.get(0).get("user_id"));
-//            Object householdId = householdRows.isEmpty() ? null : householdRows.get(0).get("household_id");
-//
-//            return ResponseEntity.ok(Map.of(
-//                    "message", "Household login successful!",
-//                    "role", "USER",
-//                    "userId", rows.get(0).get("user_id"),
-//                    "householdId", householdId != null ? householdId : 0
-//            ));
-//        }
-//    }
-//}
-
-
-
-//package com.grocerymate.controller;
-//
-//import com.grocerymate.dto.RegisterRequest;
-//import org.springframework.http.ResponseEntity;
-//import org.springframework.jdbc.core.JdbcTemplate;
-//import org.springframework.jdbc.support.GeneratedKeyHolder;
-//import org.springframework.jdbc.support.KeyHolder;
-//import org.springframework.web.bind.annotation.*;
-//
-//import java.sql.PreparedStatement;
-//import java.sql.Statement;
-//import java.util.Map;
-//
-//@RestController
-//@CrossOrigin(origins = "*")
-//@RequestMapping("/api/auth")
-//public class AuthController {
-//
-//    private final JdbcTemplate jdbcTemplate;
-//
-//    public AuthController(JdbcTemplate jdbcTemplate) {
-//        this.jdbcTemplate = jdbcTemplate;
-//    }
-//
-//    // 1. HOUSEHOLD / USER SIGNUP -> Writes to users table
-//    @PostMapping("/signup/user")
-//    public ResponseEntity<?> registerUser(@RequestBody RegisterRequest request) {
-//        String sql = """
-//            INSERT INTO users (full_name, email, password_hash, phone, account_status, created_at, updated_at)
-//            VALUES (?, ?, ?, ?, 'ACTIVE', NOW(), NOW())
-//        """;
-//
-//        jdbcTemplate.update(sql,
-//                request.getFullName(),
-//                request.getEmail(),
-//                request.getPassword(),
-//                request.getPhone()
-//        );
-//
-//        return ResponseEntity.ok(Map.of("message", "User account registered successfully!"));
-//    }
-//
-//    // 2. VENDOR SIGNUP -> Stores credentials in users, then links profile in vendors
-//    @PostMapping("/signup/vendor")
-//    public ResponseEntity<?> registerVendor(@RequestBody RegisterRequest request) {
-//        // Step A: Insert into users table to generate a user_id
-//        String userSql = """
-//            INSERT INTO users (full_name, email, password_hash, phone, account_status, created_at, updated_at)
-//            VALUES (?, ?, ?, ?, 'ACTIVE', NOW(), NOW())
-//        """;
-//
-//        KeyHolder keyHolder = new GeneratedKeyHolder();
-//
-//        jdbcTemplate.update(connection -> {
-//            PreparedStatement ps = connection.prepareStatement(userSql, Statement.RETURN_GENERATED_KEYS);
-//            ps.setString(1, request.getFullName());
-//            ps.setString(2, request.getEmail());
-//            ps.setString(3, request.getPassword());
-//            ps.setString(4, request.getPhone());
-//            return ps;
-//        }, keyHolder);
-//
-//        long newUserId = keyHolder.getKey().longValue();
-//
-//        // Step B: Insert into vendors table using the columns created by Hibernate
-//        String vendorSql = """
-//            INSERT INTO vendors (
-//                user_id, vendor_name, shop_name, phone,
-//                address, city, state, pincode, is_active,
-//                created_at, updated_at
-//            )
-//            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, NOW(), NOW())
-//        """;
-//
-//        String shopName = (request.getShopName() != null && !request.getShopName().isBlank())
-//                ? request.getShopName()
-//                : request.getFullName();
-//
-//        jdbcTemplate.update(vendorSql,
-//                newUserId,
-//                request.getFullName(),
-//                shopName,
-//                request.getPhone(),
-//                request.getAddress(),
-//                request.getCity(),
-//                request.getState(),
-//                request.getPincode()
-//        );
-//
-//        return ResponseEntity.ok(Map.of("message", "Vendor account registered successfully!"));
-//    }
-//
-//    // 3. LOGIN ENDPOINT
-//    // 3. LOGIN ENDPOINT WITH ROLE VALIDATION
-//    @PostMapping("/login")
-//    public ResponseEntity<?> login(@RequestBody Map<String, String> credentials) {
-//        String email = credentials.get("email");
-//        String password = credentials.get("password");
-//        String requestedRole = credentials.get("role"); // "user" or "vendor"
-//
-//        // 1. Verify email and password in users table
-//        String userSql = "SELECT user_id, full_name, password_hash FROM users WHERE email = ?";
-//        var userList = jdbcTemplate.queryForList(userSql, email);
-//
-//        if (userList.isEmpty()) {
-//            return ResponseEntity.status(401).body(Map.of("message", "Invalid email or password."));
-//        }
-//
-//        Map<String, Object> user = userList.get(0);
-//        String dbPassword = (String) user.get("password_hash");
-//
-//        if (!password.equals(dbPassword)) {
-//            return ResponseEntity.status(401).body(Map.of("message", "Invalid email or password."));
-//        }
-//
-//        long userId = ((Number) user.get("user_id")).longValue();
-//
-//        // 2. Check if the user is a registered vendor
-//        String vendorCheckSql = "SELECT COUNT(*) FROM vendors WHERE user_id = ?";
-//        Integer vendorCount = jdbcTemplate.queryForObject(vendorCheckSql, Integer.class, userId);
-//        boolean isVendor = (vendorCount != null && vendorCount > 0);
-//
-//        // 3. Enforce tab-specific access
-//        if ("vendor".equalsIgnoreCase(requestedRole)) {
-//            if (!isVendor) {
-//                return ResponseEntity.status(403).body(Map.of(
-//                        "message", "This account is registered as a Household, not a Vendor."
-//                ));
-//            }
-//            return ResponseEntity.ok(Map.of(
-//                    "message", "Vendor login successful!",
-//                    "role", "VENDOR",
-//                    "userId", userId
-//            ));
-//        } else {
-//            // Household login
-//            return ResponseEntity.ok(Map.of(
-//                    "message", "Household login successful!",
-//                    "role", isVendor ? "VENDOR" : "USER",
-//                    "userId", userId
-//            ));
-//        }
-//    }
-//}
-

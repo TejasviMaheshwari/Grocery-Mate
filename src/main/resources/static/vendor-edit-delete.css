@@ -1,0 +1,246 @@
+/* Add-on styles for the vendor Edit/Delete UI.
+   The existing dashboard.css remains loaded and unchanged. */
+
+.gm-table-wrap {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.gm-product-actions {
+    white-space: nowrap;
+    min-width: 145px;
+}
+
+.gm-button {
+    border: 0;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.gm-button:hover { opacity: 0.9; }
+.gm-button:active { transform: translateY(1px); }
+.gm-button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.gm-button--small {
+    padding: 7px 10px;
+    margin: 2px 5px 2px 0;
+    font-size: 0.9rem;
+}
+
+.gm-button--primary {
+    background: #287a4b;
+    color: #fff;
+}
+
+.gm-button--secondary {
+    background: #e9ecef;
+    color: #24292e;
+}
+
+.gm-button--danger {
+    background: #b42318;
+    color: #fff;
+}
+
+.gm-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+}
+
+.gm-modal.is-open { display: flex; }
+
+.gm-modal__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(20, 28, 24, 0.58);
+}
+
+.gm-modal__panel {
+    position: relative;
+    z-index: 1;
+    width: min(100%, 560px);
+    max-height: min(90vh, 850px);
+    overflow-y: auto;
+    background: #fff;
+    color: #202822;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.25);
+}
+
+.gm-modal__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 18px;
+}
+
+.gm-modal__header h2 { margin: 0 0 6px; }
+.gm-modal__header p { margin: 0; color: #66716a; }
+
+.gm-icon-button {
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font-size: 30px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 4px;
+}
+
+#editProductForm {
+    display: grid;
+    gap: 9px;
+}
+
+#editProductForm input:not([type="checkbox"]),
+#editProductForm textarea {
+    box-sizing: border-box;
+    width: 100%;
+    border: 1px solid #cfd8d1;
+    border-radius: 8px;
+    padding: 10px 12px;
+    font: inherit;
+    margin-bottom: 7px;
+}
+
+#editProductForm input:focus,
+#editProductForm textarea:focus {
+    outline: 2px solid rgba(40, 122, 75, 0.2);
+    border-color: #287a4b;
+}
+
+.gm-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.gm-form-grid > div { min-width: 0; }
+
+.gm-availability-toggle {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin: 7px 0;
+}
+
+.gm-availability-toggle input {
+    width: 17px;
+    height: 17px;
+}
+
+.gm-modal__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.gm-modal__message { min-height: 1.2em; margin: 4px 0; }
+.gm-error-text { color: #b42318; }
+.gm-success-text { color: #287a4b; }
+.gm-modal-open { overflow: hidden; }
+
+@media (max-width: 520px) {
+    .gm-modal__panel { padding: 18px; }
+    .gm-form-grid { grid-template-columns: 1fr; gap: 0; }
+    .gm-modal__actions { flex-direction: column-reverse; }
+    .gm-modal__actions .gm-button { width: 100%; }
+}
+
+.gm-workflow-section {
+    margin-top: 28px;
+}
+
+.gm-workflow-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.gm-workflow-heading h2 {
+    margin-bottom: 6px;
+}
+
+.gm-workflow-heading p {
+    margin-top: 0;
+    color: #66716a;
+}
+
+.gm-workflow-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 14px;
+}
+
+.gm-workflow-card {
+    border: 1px solid #dce5de;
+    border-radius: 12px;
+    background: #fff;
+    padding: 18px;
+    display: grid;
+    gap: 12px;
+    min-width: 0;
+}
+
+.gm-workflow-card__heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.gm-workflow-card__heading h3 {
+    margin: 0;
+}
+
+.gm-status-badge {
+    display: inline-block;
+    padding: 5px 10px;
+    border-radius: 20px;
+    background: #edf4ef;
+    color: #24643e;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.gm-workflow-card p {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+.gm-workflow-card select {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px;
+    border: 1px solid #cfd8d1;
+    border-radius: 8px;
+    font: inherit;
+}
+
+.gm-workflow-card button {
+    justify-self: start;
+}
+
+@media (max-width: 520px) {
+    .gm-workflow-card button {
+        width: 100%;
+    }
+}
