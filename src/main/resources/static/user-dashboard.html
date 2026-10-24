@@ -196,15 +196,31 @@
 
         <form id="requestItemForm">
             <div class="form-grid">
-                <div class="field">
+                <div class="field" style="position: relative;">
                     <label for="requestItemName">Item Name *</label>
                     <input
                         id="requestItemName"
                         name="requested_item_name"
                         maxlength="255"
                         required
-                        placeholder="e.g. Moong Dal">
+                        autocomplete="off"
+                        placeholder="e.g. gehun ka atta"
+                        aria-autocomplete="list"
+                        aria-controls="requestCatalogSuggestions"
+                        aria-expanded="false">
+
+                    <div
+                        id="requestCatalogSuggestions"
+                        role="listbox"
+                        aria-label="Catalog product suggestions"
+                        style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ccc; border-radius: 6px; max-height: 220px; overflow-y: auto; z-index: 1000;">
+                    </div>
+
+                    <small id="requestCatalogHint">
+                        Type at least 2 characters to search the product catalog.
+                    </small>
                 </div>
+
 
                 <div class="field">
                     <label for="requestQuantity">Quantity *</label>
@@ -306,10 +322,31 @@
 
         <form id="itemForm">
             <div class="form-grid">
-                <div class="field">
+                <div class="field" style="position: relative;">
                     <label for="itemName">Item Name *</label>
-                    <input id="itemName" name="item_name" maxlength="255" required placeholder="e.g. Atta">
+                    <input
+                        id="itemName"
+                        name="item_name"
+                        maxlength="255"
+                        required
+                        autocomplete="off"
+                        placeholder="Type e.g. gehun ka atta"
+                        aria-autocomplete="list"
+                        aria-controls="catalogSuggestions"
+                        aria-expanded="false">
+
+                    <div
+                        id="catalogSuggestions"
+                        role="listbox"
+                        aria-label="Product suggestions"
+                        style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ccc; border-radius: 6px; max-height: 220px; overflow-y: auto; z-index: 1000;">
+                    </div>
+
+                    <small id="catalogHint">
+                        Type at least 2 characters to search the product catalog.
+                    </small>
                 </div>
+
 
                 <div class="field">
                     <label for="quantity">Quantity Purchased *</label>

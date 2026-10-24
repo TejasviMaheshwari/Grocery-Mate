@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Inter:wght@300;400;500;600;700&display=swap');
 
 /* =========================================================
    1. GLOBAL STYLES
@@ -1694,4 +1695,207 @@ form {
         padding: 6px 2px;
         font-size: 10px;
     }
+}
+
+
+
+/* =========================================================
+   HOLLOW PINES THEME — GroceryMate User + Vendor Dashboards
+   Visual-only overrides. Existing structure and functionality retained.
+   ========================================================= */
+
+:root {
+  --hp-canvas: #f7f2e7;
+  --hp-ink: #192a22;
+  --hp-forest: #28513f;
+  --hp-forest-deep: #14271f;
+  --hp-ember: #e85f27;
+  --hp-ember-dark: #c94a1b;
+  --hp-muted: #68766d;
+  --hp-border: #ded7c9;
+  --hp-card: #fffdf8;
+  --hp-card-soft: #eee8dc;
+  --hp-success: #26734d;
+  --hp-danger: #b93c32;
+  --hp-radius: 18px;
+  --hp-shadow: 0 16px 42px rgba(25,42,34,.08);
+}
+
+html { scroll-behavior: smooth; scroll-padding-top: 110px; }
+body {
+  color: var(--hp-ink);
+  background: var(--hp-canvas);
+  font-family: 'Inter', sans-serif;
+  line-height: 1.65;
+}
+h1, h2, h3, h4, .stat-value, .stats p {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  letter-spacing: -.025em;
+}
+h1 { font-weight: 700; }
+h2 { font-weight: 700; }
+h3 { font-weight: 600; }
+::selection { background: #e85f2738; color: var(--hp-forest-deep); }
+a { color: var(--hp-forest); }
+a:hover { color: var(--hp-ember-dark); }
+button, input, select, textarea { font-family: 'Inter', sans-serif; }
+button {
+  background: var(--hp-ember);
+  color: #fffaf3;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 11px 19px;
+  font-weight: 700;
+  box-shadow: 0 5px 14px rgba(232,95,39,.12);
+  transition: transform .2s ease, background .2s ease, box-shadow .2s ease;
+}
+button:hover {
+  background: var(--hp-ember-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(232,95,39,.2);
+}
+button:active { transform: translateY(0); }
+button:focus-visible, a:focus-visible, input:focus-visible,
+select:focus-visible, textarea:focus-visible {
+  outline: 3px solid #e85f2766;
+  outline-offset: 3px;
+}
+input, select, textarea {
+  border: 1px solid var(--hp-border) !important;
+  border-radius: 12px !important;
+  background: #fffdf9 !important;
+  color: var(--hp-ink) !important;
+  min-height: 44px;
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+input:focus, select:focus, textarea:focus {
+  border-color: var(--hp-forest) !important;
+  box-shadow: 0 0 0 3px rgba(40,81,63,.11) !important;
+  outline: none;
+}
+label { color: var(--hp-ink); font-weight: 600; }
+section, article, .card, .panel {
+  transition: box-shadow .22s ease, border-color .22s ease, transform .22s ease;
+}
+header {
+  background: rgba(20,39,31,.97) !important;
+  color: var(--hp-canvas) !important;
+  border-bottom: 1px solid rgba(247,242,231,.14);
+  box-shadow: 0 8px 28px rgba(20,39,31,.12);
+  backdrop-filter: blur(14px);
+}
+header h1 { color: var(--hp-canvas) !important; }
+header a { color: var(--hp-canvas) !important; }
+header a:hover { color: #ffb18b !important; }
+.dashboard-nav {
+  background: transparent;
+}
+.dashboard-nav a {
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-weight: 600;
+  transition: color .2s ease, background .2s ease;
+}
+.dashboard-nav a:hover { background: rgba(247,242,231,.1); color: #ffb18b; }
+main {
+  animation: hp-rise-in .55s ease both;
+}
+main > h2 {
+  color: var(--hp-forest-deep);
+  margin-top: 26px;
+}
+.stats {
+  gap: 16px;
+}
+.stats article, .stats > div, .analytics-stat, .analytics-chart-card,
+#household-management, #request-items, #request-items-section,
+#essentials, #alerts, #add-item, #spending-analytics,
+.household-members-section, .request-items-section, .notification-panel,
+section:has(> #productsBody), section:has(> #requestsList) {
+  background: var(--hp-card) !important;
+  border: 1px solid var(--hp-border) !important;
+  border-radius: var(--hp-radius) !important;
+  box-shadow: var(--hp-shadow);
+}
+.stats article:hover, .analytics-stat:hover, .analytics-chart-card:hover {
+  border-color: #c4b8a3 !important;
+  transform: translateY(-2px);
+}
+.stats h3, .analytics-stat h3 { color: var(--hp-muted); }
+.stats p, .stats article p {
+  color: var(--hp-forest) !important;
+  font-variant-numeric: tabular-nums;
+}
+form {
+  border-radius: var(--hp-radius);
+}
+.field { gap: 7px; }
+.form-grid { gap: 18px; }
+table {
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--hp-card);
+  border-radius: 14px;
+  overflow: hidden;
+}
+thead, th {
+  background: var(--hp-forest) !important;
+  color: #fffaf3 !important;
+}
+th {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+}
+td { border-color: var(--hp-border) !important; }
+tbody tr:nth-child(even) { background: #f4efe5; }
+tbody tr:hover { background: #eee7d9; }
+.table-scroll, .gm-table-wrap {
+  border: 1px solid var(--hp-border);
+  border-radius: 14px;
+  background: var(--hp-card);
+}
+.secondary, button.secondary {
+  background: var(--hp-card-soft) !important;
+  color: var(--hp-ink) !important;
+  border-color: var(--hp-border) !important;
+  box-shadow: none;
+}
+.secondary:hover, button.secondary:hover { background: #e4dccd !important; }
+.danger, .gm-button--danger { background: var(--hp-danger) !important; color: #fff !important; }
+.success, .gm-button--primary { background: var(--hp-forest) !important; color: #fffaf3 !important; }
+.gm-button--secondary { background: var(--hp-card-soft) !important; color: var(--hp-ink) !important; }
+.gm-modal { background: rgba(14,29,22,.66) !important; backdrop-filter: blur(5px); }
+.gm-modal__panel {
+  background: var(--hp-canvas) !important;
+  border: 1px solid var(--hp-border) !important;
+  border-radius: 22px !important;
+  box-shadow: 0 28px 80px rgba(0,0,0,.25) !important;
+}
+.gm-modal__panel h2, .gm-modal__panel h3 { color: var(--hp-forest-deep); }
+.notification-panel {
+  color: var(--hp-ink);
+  border: 1px solid var(--hp-border) !important;
+}
+.notification-badge { background: var(--hp-ember) !important; }
+.stock-dot.green { background: var(--hp-success); }
+.stock-dot.amber { background: #d97706; }
+.stock-dot.red { background: var(--hp-danger); }
+hr { border-color: var(--hp-border); }
+small, .muted, .analytics-description { color: var(--hp-muted); }
+@keyframes hp-rise-in {
+  from { opacity: 0; transform: translateY(9px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }
+}
+@media (max-width: 768px) {
+  body { line-height: 1.55; }
+  header { padding-left: 16px; padding-right: 16px; }
+  main { padding-left: 14px; padding-right: 14px; }
+  .dashboard-nav { gap: 6px; }
+  .dashboard-nav a { padding: 7px 10px; font-size: 13px; }
+  .stats { gap: 10px; }
 }

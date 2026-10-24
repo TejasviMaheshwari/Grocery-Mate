@@ -499,26 +499,69 @@ public class HouseholdController {
                             : java.sql.Timestamp.valueOf(
                             dto.getNextStockCheckAt());
 
-            // 3. Find or create the shared catalog product.
-            // The database's unique normalized name prevents duplicates.
-            jdbcTemplate.update("""
-            INSERT INTO items_catalog (item_name, default_unit)
-            VALUES (?, ?)
-            ON DUPLICATE KEY UPDATE
-                catalog_item_id = LAST_INSERT_ID(catalog_item_id)
-            """, itemName, unit);
 
-            Map<String, Object> catalog = jdbcTemplate.queryForMap("""
-            SELECT catalog_item_id, item_name, default_unit
-            FROM items_catalog
-            WHERE normalized_item_name = LOWER(TRIM(?))
-            """, itemName);
+            // 3. Resolve the entered product name to the canonical catalog item.
+            // Check both canonical names and aliases before creating anything.
 
-            long catalogItemId = ((Number)
-                    catalog.get("catalog_item_id")).longValue();
+            List<Map<String, Object>> catalogMatches =
+                    jdbcTemplate.queryForList("""
+                    SELECT DISTINCT
+                        c.catalog_item_id,
+                        c.item_name,
+                        c.default_unit
+                    FROM items_catalog c
+                    LEFT JOIN catalog_item_aliases a
+                        ON a.catalog_item_id = c.catalog_item_id
+                    WHERE (
+                        c.normalized_item_name = LOWER(TRIM(?))
+                        OR a.normalized_alias = LOWER(TRIM(?))
+                    )
+                    AND c.catalog_item_id <> 1
+                    """, itemName, itemName);
 
-            String catalogName = catalog.get("item_name").toString();
-            String defaultUnit = catalog.get("default_unit").toString();
+            long catalogItemId;
+            String catalogName;
+            String defaultUnit;
+
+            if (catalogMatches.size() > 1) {
+                return error(HttpStatus.BAD_REQUEST,
+                        "This product name matches multiple products. "
+                                + "Please enter a more specific name, "
+                                + "such as 'gehun ka atta' or 'bajre ka atta'.");
+            }
+
+            if (catalogMatches.size() == 1) {
+                Map<String, Object> catalog = catalogMatches.get(0);
+
+                catalogItemId = ((Number)
+                        catalog.get("catalog_item_id")).longValue();
+
+                catalogName = catalog.get("item_name").toString();
+                defaultUnit = catalog.get("default_unit").toString();
+
+            } else {
+                // No existing canonical name or alias matched.
+                // Create a catalog item only for a genuinely new product.
+                jdbcTemplate.update("""
+                    INSERT INTO items_catalog (item_name, default_unit)
+                    VALUES (?, ?)
+                    ON DUPLICATE KEY UPDATE
+                        catalog_item_id = LAST_INSERT_ID(catalog_item_id)
+                    """, itemName.trim(), unit);
+
+                Map<String, Object> catalog = jdbcTemplate.queryForMap("""
+                    SELECT catalog_item_id, item_name, default_unit
+                    FROM items_catalog
+                    WHERE normalized_item_name = LOWER(TRIM(?))
+                    """, itemName);
+
+                catalogItemId = ((Number)
+                        catalog.get("catalog_item_id")).longValue();
+
+                catalogName = catalog.get("item_name").toString();
+                defaultUnit = catalog.get("default_unit").toString();
+            }
+
 
             if (!defaultUnit.equalsIgnoreCase(unit)) {
                 return error(HttpStatus.BAD_REQUEST,

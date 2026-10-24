@@ -30,7 +30,30 @@
         <section>
             <h2>Add Product</h2>
             <form id="productForm">
-                <input id="productName" name="productName" placeholder="Product name" required maxlength="150">
+                <div class="field" style="position: relative;">
+                    <label for="productName">Product name *</label>
+                    <input
+                        id="productName"
+                        name="productName"
+                        placeholder="Type e.g. gehun ka atta"
+                        required
+                        maxlength="150"
+                        autocomplete="off"
+                        aria-autocomplete="list"
+                        aria-controls="vendorCatalogSuggestions"
+                        aria-expanded="false">
+
+                    <div
+                        id="vendorCatalogSuggestions"
+                        role="listbox"
+                        aria-label="Catalog product suggestions"
+                        style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ccc; border-radius: 6px; max-height: 220px; overflow-y: auto; z-index: 1000;">
+                    </div>
+
+                    <small id="vendorCatalogHint">
+                        Type at least 2 characters to search the catalog.
+                    </small>
+                </div>
                 <input id="category" name="category" placeholder="Category" required maxlength="100">
                 <input id="price" name="price" type="number" min="0.01" step="0.01" placeholder="Price in ₹" required>
                 <input id="stock" name="stock" type="number" min="0" step="1" placeholder="Available stock" required>
@@ -130,7 +153,28 @@
             <form id="editProductForm">
                 <input id="editProductId" type="hidden">
                 <label for="editProductName">Product name</label>
-                <input id="editProductName" required maxlength="150">
+                <div class="field" style="position: relative;">
+                    <input
+                        id="editProductName"
+                        required
+                        maxlength="150"
+                        autocomplete="off"
+                        aria-label="Edit product name"
+                        aria-autocomplete="list"
+                        aria-controls="editVendorCatalogSuggestions"
+                        aria-expanded="false">
+
+                    <div
+                        id="editVendorCatalogSuggestions"
+                        role="listbox"
+                        aria-label="Catalog product suggestions"
+                        style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ccc; border-radius: 6px; max-height: 220px; overflow-y: auto; z-index: 1100;">
+                    </div>
+
+                    <small id="editVendorCatalogHint">
+                        Type at least 2 characters to search the catalog.
+                    </small>
+                </div>
 
                 <label for="editCategory">Category</label>
                 <input id="editCategory" required maxlength="100">

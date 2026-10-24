@@ -32,6 +32,8 @@ public class VendorProductService {
     }
 
     // Resolve the canonical catalog item from its normalized name
+
+    // Resolve a canonical catalog item using its name or an alias.
     private Long resolveCatalogItemId(String productName) {
 
         if (productName == null || productName.isBlank()) {
@@ -41,27 +43,65 @@ public class VendorProductService {
             );
         }
 
-        String normalizedName = productName.trim().toLowerCase(Locale.ROOT);
+        String normalizedName =
+                productName.trim().toLowerCase(Locale.ROOT);
 
         List<Long> catalogIds = jdbcTemplate.queryForList(
                 """
-                SELECT catalog_item_id
-                FROM items_catalog
-                WHERE normalized_item_name = ?
+                SELECT DISTINCT c.catalog_item_id
+                FROM items_catalog c
+                LEFT JOIN catalog_item_aliases a
+                    ON a.catalog_item_id = c.catalog_item_id
+                WHERE (
+                    c.normalized_item_name = ?
+                    OR a.normalized_alias = ?
+                )
+                AND c.catalog_item_id <> 1
                 """,
                 Long.class,
+                normalizedName,
                 normalizedName
         );
+
+        if (catalogIds.size() > 1) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "This name matches multiple catalog products. "
+                            + "Please use a more specific product name."
+            );
+        }
 
         if (catalogIds.isEmpty()) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "This product does not exist in the item catalog. "
-                            + "Please use an existing catalog item name."
+                            + "Please select a valid catalog product."
             );
         }
 
         return catalogIds.get(0);
+    }
+
+
+    private String getCatalogCategory(Long catalogItemId) {
+        List<String> categories = jdbcTemplate.queryForList(
+                """
+                SELECT category
+                FROM items_catalog
+                WHERE catalog_item_id = ?
+                """,
+                String.class,
+                catalogItemId
+        );
+
+        if (categories.isEmpty()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "The selected catalog product does not exist."
+            );
+        }
+
+        return categories.get(0);
     }
 
     // Add a new product
@@ -69,12 +109,15 @@ public class VendorProductService {
 
         product.setProductId(null);
 
+
         Long catalogItemId =
                 resolveCatalogItemId(product.getProductName());
 
         product.setCatalogItemId(catalogItemId);
+        product.setCategory(getCatalogCategory(catalogItemId));
 
         return repository.save(product);
+
     }
 
     // Update a product owned by the logged-in vendor
@@ -93,19 +136,21 @@ public class VendorProductService {
                 ));
 
         // Resolve the catalog mapping for the updated name
+
         Long catalogItemId =
                 resolveCatalogItemId(updatedProduct.getProductName());
 
-        existingProduct.setProductName(updatedProduct.getProductName());
         existingProduct.setCatalogItemId(catalogItemId);
+        existingProduct.setCategory(getCatalogCategory(catalogItemId));
+        existingProduct.setProductName(updatedProduct.getProductName());
         existingProduct.setDescription(updatedProduct.getDescription());
-        existingProduct.setCategory(updatedProduct.getCategory());
         existingProduct.setPrice(updatedProduct.getPrice());
         existingProduct.setStockQuantity(updatedProduct.getStockQuantity());
         existingProduct.setUnit(updatedProduct.getUnit());
         existingProduct.setAvailable(updatedProduct.getAvailable());
 
         return repository.save(existingProduct);
+
     }
 
     // Delete a product owned by the logged-in vendor

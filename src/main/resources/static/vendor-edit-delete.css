@@ -42,8 +42,12 @@
 }
 
 .gm-button--danger {
-    background: #b42318;
-    color: #fff;
+    background: #F97316;
+    color: #FFFFFF;
+}
+
+.gm-button--danger:hover {
+    background: #EA580C;
 }
 
 .gm-modal {

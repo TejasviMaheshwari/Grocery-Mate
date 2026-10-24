@@ -832,6 +832,191 @@ async function loadDashboard() {
     }
 }
 
+/* ---------------- Catalog Autocomplete ---------------- */
+
+const catalogItemInput = document.getElementById("itemName");
+const catalogSuggestions = document.getElementById("catalogSuggestions");
+const catalogHint = document.getElementById("catalogHint");
+const catalogUnitSelect = document.getElementById("unit");
+
+let selectedCatalogItem = null;
+let catalogSearchTimer = null;
+let catalogSearchVersion = 0;
+let activeSuggestionIndex = -1;
+
+function hideCatalogSuggestions() {
+    catalogSuggestions.replaceChildren();
+    catalogSuggestions.style.display = "none";
+    catalogItemInput.setAttribute("aria-expanded", "false");
+    activeSuggestionIndex = -1;
+}
+
+function selectCatalogItem(product) {
+    selectedCatalogItem = product;
+
+    catalogItemInput.value = product.itemName;
+    catalogUnitSelect.value = product.defaultUnit;
+
+    // Keep the unit consistent with the selected catalog product.
+    if (catalogUnitSelect.value !== product.defaultUnit) {
+        catalogHint.textContent =
+            "This product uses unit '" + product.defaultUnit +
+            "'. Please check the available unit options.";
+    } else {
+        catalogHint.textContent =
+            "Selected: " + product.itemName +
+            " (unit: " + product.defaultUnit + ")";
+    }
+
+    hideCatalogSuggestions();
+}
+
+function highlightCatalogSuggestion(index) {
+    const options = [
+        ...catalogSuggestions.querySelectorAll("[role='option']")
+    ];
+
+    if (options.length === 0) return;
+
+    activeSuggestionIndex =
+        (index + options.length) % options.length;
+
+    options.forEach((option, i) => {
+        const active = i === activeSuggestionIndex;
+
+        option.style.background = active ? "#eef4ff" : "white";
+        option.setAttribute("aria-selected", String(active));
+    });
+}
+
+function renderCatalogSuggestions(products) {
+    catalogSuggestions.replaceChildren();
+    activeSuggestionIndex = -1;
+
+    if (!products.length) {
+        const empty = document.createElement("div");
+        empty.textContent = "No matching catalog products found.";
+        empty.style.padding = "10px";
+        empty.style.color = "#666";
+
+        catalogSuggestions.appendChild(empty);
+        catalogSuggestions.style.display = "block";
+        catalogItemInput.setAttribute("aria-expanded", "true");
+        return;
+    }
+
+    products.forEach((product, index) => {
+        const option = document.createElement("div");
+
+        option.setAttribute("role", "option");
+        option.setAttribute("aria-selected", "false");
+        option.id = "catalog-suggestion-" + index;
+        option.style.padding = "10px";
+        option.style.cursor = "pointer";
+        option.style.borderBottom = "1px solid #eee";
+
+        const name = document.createElement("div");
+        name.textContent = product.itemName;
+        name.style.fontWeight = "600";
+
+        const unit = document.createElement("small");
+        unit.textContent = "Unit: " + product.defaultUnit;
+        unit.style.color = "#666";
+
+        option.append(name, unit);
+
+        // Prevent the input from losing focus before selection.
+        option.addEventListener("mousedown", event => {
+            event.preventDefault();
+        });
+
+        option.addEventListener("click", () => {
+            selectCatalogItem(product);
+        });
+
+        catalogSuggestions.appendChild(option);
+    });
+
+    catalogSuggestions.style.display = "block";
+    catalogItemInput.setAttribute("aria-expanded", "true");
+}
+
+catalogItemInput.addEventListener("input", () => {
+    // Any text change invalidates the previous selection.
+    selectedCatalogItem = null;
+
+    catalogHint.textContent =
+        "Type at least 2 characters to search the product catalog.";
+
+    clearTimeout(catalogSearchTimer);
+
+    const version = ++catalogSearchVersion;
+    const query = catalogItemInput.value.trim();
+
+    if (query.length < 2) {
+        hideCatalogSuggestions();
+        return;
+    }
+
+    catalogSearchTimer = setTimeout(async () => {
+        try {
+            const products = await apiRequest(
+                "/catalog/search?q=" + encodeURIComponent(query)
+            );
+
+            // Ignore results for an older query.
+            if (version !== catalogSearchVersion) return;
+
+            renderCatalogSuggestions(
+                Array.isArray(products) ? products : []
+            );
+        } catch (error) {
+            if (version !== catalogSearchVersion) return;
+
+            hideCatalogSuggestions();
+            catalogHint.textContent =
+                "Catalog search failed. You can still enter an item name.";
+            console.error("Catalog search failed:", error);
+        }
+    }, 250);
+});
+
+catalogItemInput.addEventListener("keydown", event => {
+    const options = [
+        ...catalogSuggestions.querySelectorAll("[role='option']")
+    ];
+
+    if (event.key === "ArrowDown" && options.length) {
+        event.preventDefault();
+        highlightCatalogSuggestion(activeSuggestionIndex + 1);
+    } else if (event.key === "ArrowUp" && options.length) {
+        event.preventDefault();
+        highlightCatalogSuggestion(
+            activeSuggestionIndex <= 0
+                ? options.length - 1
+                : activeSuggestionIndex - 1
+        );
+    } else if (
+        event.key === "Enter" &&
+        activeSuggestionIndex >= 0 &&
+        options[activeSuggestionIndex]
+    ) {
+        event.preventDefault();
+        options[activeSuggestionIndex].click();
+    } else if (event.key === "Escape") {
+        hideCatalogSuggestions();
+    }
+});
+
+document.addEventListener("click", event => {
+    if (
+        !catalogSuggestions.contains(event.target) &&
+        event.target !== catalogItemInput
+    ) {
+        hideCatalogSuggestions();
+    }
+});
+
 document.getElementById("itemForm").addEventListener("submit", async function(event) {
     event.preventDefault();
 
@@ -882,6 +1067,14 @@ document.getElementById("itemForm").addEventListener("submit", async function(ev
 
         showMessage("Household essential saved successfully.", true);
         event.target.reset();
+
+        selectedCatalogItem = null;
+        catalogSearchVersion++;
+        clearTimeout(catalogSearchTimer);
+        hideCatalogSuggestions();
+
+        catalogHint.textContent =
+            "Type at least 2 characters to search the product catalog.";
 
         document.getElementById("duration").value = 30;
         document.getElementById("reminderDays").value = 3;
@@ -1357,6 +1550,247 @@ function showRequestItemMessage(message, success = false) {
     requestItemMessage.style.color = success ? "#17642b" : "#b42318";
 }
 
+
+/* ---------- Request Item Catalog Autocomplete ---------- */
+
+const requestCatalogInput =
+    document.getElementById("requestItemName");
+const requestCatalogUnit =
+    document.getElementById("requestUnit");
+const requestCatalogSuggestions =
+    document.getElementById("requestCatalogSuggestions");
+const requestCatalogHint =
+    document.getElementById("requestCatalogHint");
+
+let requestCatalogTimer = null;
+let requestCatalogSearchVersion = 0;
+let requestCatalogActiveIndex = -1;
+let requestCatalogResults = [];
+
+function hideRequestCatalogSuggestions() {
+    if (!requestCatalogSuggestions) return;
+
+    requestCatalogSuggestions.style.display = "none";
+    requestCatalogSuggestions.replaceChildren();
+
+    if (requestCatalogInput) {
+        requestCatalogInput.setAttribute("aria-expanded", "false");
+    }
+
+    requestCatalogActiveIndex = -1;
+    requestCatalogResults = [];
+}
+
+function selectRequestCatalogItem(item) {
+    if (!item || !requestCatalogInput) return;
+
+    requestCatalogInput.value = item.itemName || "";
+
+    // Use the catalog's default unit when it exists in the dropdown.
+    const defaultUnit = item.defaultUnit;
+
+    if (
+        defaultUnit &&
+        requestCatalogUnit &&
+        Array.from(requestCatalogUnit.options).some(
+            option => option.value === defaultUnit
+        )
+    ) {
+        requestCatalogUnit.value = defaultUnit;
+    }
+
+    hideRequestCatalogSuggestions();
+
+    if (requestCatalogHint) {
+        requestCatalogHint.textContent =
+            "Selected catalog item: " + item.itemName;
+    }
+
+    requestCatalogInput.focus();
+}
+
+function renderRequestCatalogSuggestions(items) {
+    if (!requestCatalogSuggestions) return;
+
+    requestCatalogSuggestions.replaceChildren();
+    requestCatalogResults = items;
+    requestCatalogActiveIndex = -1;
+
+    if (items.length === 0) {
+        hideRequestCatalogSuggestions();
+
+        if (requestCatalogHint) {
+            requestCatalogHint.textContent =
+                "No matching catalog items found. You can still enter an item name.";
+        }
+        return;
+    }
+
+    items.forEach((item, index) => {
+        const option = document.createElement("div");
+
+        option.setAttribute("role", "option");
+        option.setAttribute("aria-selected", "false");
+        option.dataset.index = String(index);
+        option.textContent =
+            item.itemName +
+            (item.defaultUnit ? " (" + item.defaultUnit + ")" : "");
+
+        Object.assign(option.style, {
+            padding: "9px 12px",
+            cursor: "pointer",
+            borderBottom: "1px solid #eee"
+        });
+
+        // Prevent the input from losing focus before selection.
+        option.addEventListener("mousedown", event => {
+            event.preventDefault();
+            selectRequestCatalogItem(item);
+        });
+
+        requestCatalogSuggestions.appendChild(option);
+    });
+
+    requestCatalogSuggestions.style.display = "block";
+    requestCatalogInput?.setAttribute("aria-expanded", "true");
+
+    if (requestCatalogHint) {
+        requestCatalogHint.textContent =
+            "Choose a suggestion to fill in the catalog item and its default unit.";
+    }
+}
+
+function updateRequestCatalogActiveOption() {
+    if (!requestCatalogSuggestions) return;
+
+    const options =
+        requestCatalogSuggestions.querySelectorAll('[role="option"]');
+
+    options.forEach((option, index) => {
+        const active = index === requestCatalogActiveIndex;
+
+        option.setAttribute("aria-selected", String(active));
+        option.style.background = active ? "#e8f0fe" : "white";
+
+        if (active) {
+            option.scrollIntoView({ block: "nearest" });
+        }
+    });
+}
+
+if (requestCatalogInput && requestCatalogSuggestions) {
+    requestCatalogInput.addEventListener("input", () => {
+        clearTimeout(requestCatalogTimer);
+
+        const query = requestCatalogInput.value.trim();
+        const searchVersion = ++requestCatalogSearchVersion;
+
+        hideRequestCatalogSuggestions();
+
+        if (requestCatalogHint) {
+            requestCatalogHint.textContent =
+                "Type at least 2 characters to search the product catalog.";
+        }
+
+        if (query.length < 2) return;
+
+        requestCatalogTimer = setTimeout(async () => {
+            try {
+                const data = await apiRequest(
+                    "/catalog/search?q=" + encodeURIComponent(query)
+                );
+
+                // Ignore an older response if the user has typed again.
+                if (searchVersion !== requestCatalogSearchVersion) return;
+
+                const items = Array.isArray(data)
+                    ? data
+                    : Array.isArray(data?.items)
+                        ? data.items
+                        : Array.isArray(data?.results)
+                            ? data.results
+                            : [];
+
+                renderRequestCatalogSuggestions(items);
+            } catch (error) {
+                if (searchVersion !== requestCatalogSearchVersion) return;
+
+                console.error(
+                    "Could not search the request item catalog:",
+                    error
+                );
+
+                hideRequestCatalogSuggestions();
+
+                if (requestCatalogHint) {
+                    requestCatalogHint.textContent =
+                        "Catalog suggestions are unavailable. You can still enter the item name.";
+                }
+            }
+        }, 250);
+    });
+
+    requestCatalogInput.addEventListener("keydown", event => {
+        if (requestCatalogSuggestions.style.display === "none") return;
+
+        if (event.key === "ArrowDown") {
+            event.preventDefault();
+
+            requestCatalogActiveIndex =
+                (requestCatalogActiveIndex + 1) %
+                requestCatalogResults.length;
+
+            updateRequestCatalogActiveOption();
+        } else if (event.key === "ArrowUp") {
+            event.preventDefault();
+
+            requestCatalogActiveIndex =
+                requestCatalogActiveIndex <= 0
+                    ? requestCatalogResults.length - 1
+                    : requestCatalogActiveIndex - 1;
+
+            updateRequestCatalogActiveOption();
+        } else if (
+            event.key === "Enter" &&
+            requestCatalogActiveIndex >= 0
+        ) {
+            event.preventDefault();
+            selectRequestCatalogItem(
+                requestCatalogResults[requestCatalogActiveIndex]
+            );
+        } else if (event.key === "Escape") {
+            hideRequestCatalogSuggestions();
+        }
+    });
+
+    document.addEventListener("click", event => {
+        if (
+            !requestCatalogInput.contains(event.target) &&
+            !requestCatalogSuggestions.contains(event.target)
+        ) {
+            hideRequestCatalogSuggestions();
+        }
+    });
+
+    requestItemForm?.addEventListener("reset", () => {
+        clearTimeout(requestCatalogTimer);
+        ++requestCatalogSearchVersion;
+
+        // Let the browser reset the form before clearing autocomplete state.
+        setTimeout(() => {
+            hideRequestCatalogSuggestions();
+
+            if (requestCatalogHint) {
+                requestCatalogHint.textContent =
+                    "Type at least 2 characters to search the product catalog.";
+            }
+        }, 0);
+    });
+}
+
+/* ---------- End Request Item Catalog Autocomplete ---------- */
+
+
 if (requestItemForm) {
     requestItemForm.addEventListener("submit", async function (event) {
         event.preventDefault();
@@ -1398,11 +1832,23 @@ if (requestItemForm) {
         submitItemRequestButton.textContent = "Submitting...";
         showRequestItemMessage("");
 
+        // try {
+        //     const result = await apiRequest(HOUSEHOLD_REQUESTS_API, {
+        //         method: "POST",
+        //         body: JSON.stringify(requestBody)
+        //     });
+        
         try {
+            console.log("[Request Debug] Submit handler reached.");
+            console.log("[Request Debug] API path:", HOUSEHOLD_REQUESTS_API);
+            console.log("[Request Debug] Payload:", requestBody);
+
             const result = await apiRequest(HOUSEHOLD_REQUESTS_API, {
                 method: "POST",
                 body: JSON.stringify(requestBody)
             });
+
+            console.log("[Request Debug] API response received:", result);
 
             if (!result || !result.request) {
                 throw new Error("The server did not return the saved request.");
