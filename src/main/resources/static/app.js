@@ -6,29 +6,34 @@ const IS_LOCAL =
   window.location.hostname === "127.0.0.1";
 
 const AUTH_BASE = IS_LOCAL
-  ? (window.location.port === "8080" ? "" : "http://localhost:8080")
-  : LIVE_BACKEND_URL;
+  ? (window.location.port === "8080"
+      ? ""
+      : "http://localhost:8080")
+  : window.location.origin;
 
 const ENDPOINTS = {
   userRegister: `${AUTH_BASE}/api/auth/signup/user`,
   vendorRegister: `${AUTH_BASE}/api/auth/signup/vendor`,
   login: `${AUTH_BASE}/api/auth/login`
 };
-
 async function getAuthCsrfToken() {
-  try {
-    const response = await fetch(`${AUTH_BASE}/api/csrf`, {
-      method: "GET",
-      credentials: "include",
-      headers: { "Accept": "application/json" }
-    });
-    if (!response.ok) return "";
-    const data = await response.json();
-    return data.token || "";
-  } catch {
-    return "";
-  }
+  // CSRF is disabled on the backend REST API
+  return "";
 }
+// async function getAuthCsrfToken() {
+//   try {
+//     const response = await fetch(`${AUTH_BASE}/api/csrf`, {
+//       method: "GET",
+//       credentials: "include",
+//       headers: { "Accept": "application/json" }
+//     });
+//     if (!response.ok) return "";
+//     const data = await response.json();
+//     return data.token || "";
+//   } catch {
+//     return "";
+//   }
+// }
 
 const form = document.getElementById("authForm");
 const statusMessage = document.getElementById("statusMessage");
@@ -260,13 +265,24 @@ if (form) {
       }
 
       const csrfToken = await getAuthCsrfToken();
+      // const requestHeaders = {
+      //   "Content-Type": "application/json",
+      //   "Accept": "application/json"
+      // };
+      // if (csrfToken) {
+      //   requestHeaders["X-XSRF-TOKEN"] = csrfToken;
+      // }
+
+      // const response = await fetch(url, {
+      //   method: "POST",
+      //   credentials: "include",
+      //   headers: requestHeaders,
+      //   body: JSON.stringify(payload)
+      // });
       const requestHeaders = {
         "Content-Type": "application/json",
         "Accept": "application/json"
       };
-      if (csrfToken) {
-        requestHeaders["X-XSRF-TOKEN"] = csrfToken;
-      }
 
       const response = await fetch(url, {
         method: "POST",
@@ -274,7 +290,6 @@ if (form) {
         headers: requestHeaders,
         body: JSON.stringify(payload)
       });
-
       const data = await readResponse(response);
 
       if (!response.ok) {

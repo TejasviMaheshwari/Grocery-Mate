@@ -8,7 +8,7 @@ const API_BASE = IS_LOCAL
     ? (window.location.port === "8080"
         ? ""
         : "http://localhost:8080")
-    : LIVE_BACKEND_URL;
+    : window.location.origin;
 
 // Read the CSRF cookie created by Spring Security.
 function getCookie(name) {
@@ -25,27 +25,58 @@ function getCookie(name) {
 // Load/initialize the CSRF token before sending protected requests.
 // Assumes GET /api/csrf is configured in your Spring Boot backend.
 
+// async function getCsrfToken() {
+//     const response = await fetch(`${API_BASE}/csrf`, {
+//         method: "GET",
+//         credentials: "include",
+//         // credentials: "same-origin",
+//         headers: {
+//             Accept: "application/json"
+//         }
+//     });
+//
+//     if (!response.ok) {
+//         throw new Error("Could not initialize security token.");
+//     }
+//
+//     const data = await response.json();
+//
+//     // Prefer the cookie used by CookieCsrfTokenRepository.
+//     const cookieToken = getCookie("XSRF-TOKEN");
+//     const token = cookieToken || data.token || null;
+//
+//     if (!token) {
+//         throw new Error("CSRF token is missing.");
+//     }
+//
+//     return token;
+// }
+
 async function getCsrfToken() {
-    const response = await fetch(`${API_BASE}/csrf`, {
+    const response = await fetch(`${API_BASE}/api/csrf`, {
         method: "GET",
         credentials: "include",
-        // credentials: "same-origin",
         headers: {
             Accept: "application/json"
         }
     });
 
     if (!response.ok) {
+        console.error(
+            "CSRF initialization failed:",
+            response.status,
+            await response.text()
+        );
         throw new Error("Could not initialize security token.");
     }
 
     const data = await response.json();
 
-    // Prefer the cookie used by CookieCsrfTokenRepository.
     const cookieToken = getCookie("XSRF-TOKEN");
     const token = cookieToken || data.token || null;
 
     if (!token) {
+        console.error("CSRF response did not contain a usable token:", data);
         throw new Error("CSRF token is missing.");
     }
 
