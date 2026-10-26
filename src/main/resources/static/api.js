@@ -4,11 +4,22 @@ const IS_LOCAL =
     window.location.hostname === "localhost" ||
     window.location.hostname === "127.0.0.1";
 
-const AUTH_BASE = IS_LOCAL
+window.API_BASE = (
+    window.location.hostname === "localhost" ||
+    window.location.hostname === "127.0.0.1"
+)
     ? (window.location.port === "8080"
         ? ""
         : "http://localhost:8080")
-    : LIVE_BACKEND_URL;
+    : "https://grocerymate-backend.onrender.com";
+
+const API_BASE = window.API_BASE;
+
+// const AUTH_BASE = IS_LOCAL
+//     ? (window.location.port === "8080"
+//         ? ""
+//         : "http://localhost:8080")
+//     : LIVE_BACKEND_URL;
 
 // const API_BASE = IS_LOCAL
 //     ? (window.location.port === "8080"
@@ -59,7 +70,8 @@ function getCookie(name) {
 // }
 
 async function getCsrfToken() {
-    const response = await fetch(`${API_BASE}/api/csrf`, {
+    const response = await fetch(`${window.API_BASE}/api${path}`, {
+    // const response = await fetch(`${API_BASE}/api/csrf`, {
         method: "GET",
         credentials: "include",
         headers: {
