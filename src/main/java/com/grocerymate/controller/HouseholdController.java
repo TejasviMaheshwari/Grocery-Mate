@@ -68,54 +68,62 @@ public class HouseholdController {
         }
 
         try {
+
             return ResponseEntity.ok(jdbcTemplate.queryForList("""
-            SELECT
-                hi.item_id,
-                hi.household_id,
-                hi.catalog_item_id,
-                hi.item_name,
-                hi.quantity_remaining,
-                hi.low_stock_threshold,
-                hi.unit,
-                hi.purchase_date,
-                hi.last_purchase_price,
-                hi.expected_duration_days,
-                hi.estimated_refill_date,
-                hi.reminder_days_before,
-                hi.planning_period,
-                hi.next_stock_check_at,
-                hi.is_active,
+                SELECT
+                    hi.item_id,
+                    hi.household_id,
+                    hi.catalog_item_id,
+                    hi.item_name,
+                    hi.quantity_remaining,
+                    hi.low_stock_threshold,
+                    hi.unit,
+                    hi.purchase_date,
+                    hi.last_purchase_price,
+                    hi.expected_duration_days,
+                    hi.estimated_refill_date,
+                    hi.reminder_days_before,
+                    hi.planning_period,
+                    hi.next_stock_check_at,
+                    hi.is_active,
+            
+                    lp.purchase_date AS last_purchase_date,
+                    lp.quantity_purchased AS last_quantity_purchased,
+                    lp.unit_price AS last_unit_price,
+                    lp.total_amount AS last_purchase_total,
+                    lp.purchase_id AS last_purchase_id,
+            
+                    hi.created_at,
+                    hi.updated_at
+            
+                FROM household_items hi
+            
+                LEFT JOIN (
+                    SELECT
+                        p.purchase_id,
+                        p.item_id,
+                        p.purchase_date,
+                        p.quantity_purchased,
+                        p.unit_price,
+                        p.total_amount,
+                        ROW_NUMBER() OVER (
+                            PARTITION BY p.item_id
+                            ORDER BY p.purchase_date DESC,
+                                     p.purchase_id DESC
+                        ) AS rn
+                    FROM purchase_history p
+                    WHERE p.notes IS NULL
+                       OR p.notes NOT LIKE 'TEST DATA%'
+                ) lp
+                    ON lp.item_id = hi.item_id
+                   AND lp.rn = 1
+            
+                WHERE hi.household_id = ?
+                  AND hi.is_active = 1
+            
+                ORDER BY hi.item_id DESC
+                """, authenticatedHouseholdId));
 
-                lp.purchase_date AS last_purchase_date,
-                lp.quantity_purchased AS last_quantity_purchased,
-                lp.unit_price AS last_unit_price,
-                lp.total_amount AS last_purchase_total,
-                lp.purchase_id AS last_purchase_id,
-
-                hi.created_at,
-                hi.updated_at
-
-            FROM household_items hi
-
-            LEFT JOIN purchase_history lp
-                ON lp.purchase_id = (
-                    SELECT ph.purchase_id
-                    FROM purchase_history ph
-                    WHERE ph.item_id = hi.item_id
-                      AND (
-                          ph.notes IS NULL
-                          OR ph.notes NOT LIKE 'TEST DATA%'
-                      )
-                    ORDER BY ph.purchase_date DESC,
-                             ph.purchase_id DESC
-                    LIMIT 1
-                )
-
-            WHERE hi.household_id = ?
-              AND hi.is_active = 1
-
-            ORDER BY hi.item_id DESC
-            """, authenticatedHouseholdId));
 
         } catch (Exception e) {
             return error(HttpStatus.INTERNAL_SERVER_ERROR,
