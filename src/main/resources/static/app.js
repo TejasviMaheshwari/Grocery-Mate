@@ -1,39 +1,64 @@
-/*
- * GroceryMate authentication UI.
- * Expected Spring Boot endpoints (change API_BASE / paths below if your backend differs):
- * POST /api/auth/register/user
- * POST /api/auth/register/vendor
- * POST /api/auth/login
- *
- * This frontend never connects directly to MySQL. Password hashing and SQL writes belong
- * in the Java backend. Do not store plain-text passwords or trust a role sent by the browser.
- */
+
+const LIVE_BACKEND_URL = "https://grocerymate-backend.onrender.com";
+
+const IS_LOCAL =
+    window.location.hostname === "localhost" ||
+    window.location.hostname === "127.0.0.1";
+
+// API_BASE is the backend origin, without /api at the end.
+const API_BASE = IS_LOCAL
+    ? (
+        window.location.port === "8080"
+            ? ""
+            : "http://localhost:8080"
+    )
+    : LIVE_BACKEND_URL;
+
+const response = await fetch(`${API_BASE}/api/csrf`, {
+  method: "GET",
+  credentials: "include",
+  headers: {
+    Accept: "application/json"
+  }
+});
 
 
-const API_BASE = "http://localhost:8080";
-
-const ENDPOINTS = {
-  userRegister: `${API_BASE}/api/auth/signup/user`,
-  vendorRegister: `${API_BASE}/api/auth/signup/vendor`,
-  login: `${API_BASE}/api/auth/login`
-};
 
 async function getCsrfToken() {
   const response = await fetch(`${API_BASE}/api/csrf`, {
     method: "GET",
-    credentials: "same-origin",
+    credentials: "include",
     headers: {
       "Accept": "application/json"
     }
   });
 
   if (!response.ok) {
-    throw new Error(`Could not obtain CSRF token (${response.status}).`);
+    throw new Error(
+        `Could not obtain CSRF token (${response.status}).`
+    );
   }
 
   const data = await response.json();
-  return data.token;
+
+  const cookieToken = document.cookie
+      .split("; ")
+      .find(cookie => cookie.startsWith("XSRF-TOKEN="))
+      ?.split("=")
+      .slice(1)
+      .join("=");
+
+  const token = cookieToken
+      ? decodeURIComponent(cookieToken)
+      : data.token;
+
+  if (!token) {
+    throw new Error("CSRF token is missing.");
+  }
+
+  return token;
 }
+
 
 
 
@@ -240,7 +265,7 @@ form.addEventListener("submit", async event => {
 
     const response = await fetch(url, {
       method: "POST",
-      credentials: "same-origin",
+      credentials: "include",
       headers: {
         "Content-Type": "application/json",
         "Accept": "application/json",
@@ -326,7 +351,7 @@ form.addEventListener("submit", async event => {
             `${API_BASE}/api/household/invitations/accept`,
             {
               method: "POST",
-              credentials: "same-origin",
+              credentials: "include",
               headers: {
                 "Content-Type": "application/json",
                 "Accept": "application/json",

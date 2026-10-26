@@ -1,24 +1,14 @@
-const LIVE_BACKEND_URL =
-    "https://grocerymate-backend.onrender.com";
+const LIVE_BACKEND_URL = "https://grocerymate-backend.onrender.com";
 
 const IS_LOCAL =
     window.location.hostname === "localhost" ||
     window.location.hostname === "127.0.0.1";
 
 const API_BASE = IS_LOCAL
-    ? (
-        window.location.port === "8080"
-            ? "/api"
-            : "http://localhost:8080/api"
-      )
-    : `${LIVE_BACKEND_URL}/api`;
-
-// const API_BASE =
-//     window.location.protocol === "file:"
-//         ? "http://localhost:8080/api"
-//         : window.location.port === "8080"
-//             ? "/api"
-//             : "http://localhost:8080/api";
+    ? (window.location.port === "8080"
+        ? ""
+        : "http://localhost:8080")
+    : LIVE_BACKEND_URL;
 
 // Read the CSRF cookie created by Spring Security.
 function getCookie(name) {
@@ -53,14 +43,10 @@ async function getCsrfToken() {
 
     // Prefer the cookie used by CookieCsrfTokenRepository.
     const cookieToken = getCookie("XSRF-TOKEN");
-
-    // Fall back to the token returned by the endpoint.
     const token = cookieToken || data.token || null;
 
     if (!token) {
-        throw new Error(
-            "CSRF token missing. Check the /api/csrf endpoint."
-        );
+        throw new Error("CSRF token is missing.");
     }
 
     return token;
@@ -90,12 +76,11 @@ async function apiRequest(path, options = {}) {
         headers["X-XSRF-TOKEN"] = csrfToken;
     }
 
-    const response = await fetch(`${API_BASE}${path}`, {
+    const response = await fetch(`${API_BASE}/api${path}`, {
         ...options,
         method,
         headers,
         credentials: "include"
-        // credentials: "same-origin"
     });
 
     const text = await response.text();
