@@ -1,66 +1,34 @@
-
+// Base API URL configuration
 const LIVE_BACKEND_URL = "https://grocerymate-backend.onrender.com";
 
 const IS_LOCAL =
-    window.location.hostname === "localhost" ||
-    window.location.hostname === "127.0.0.1";
+  window.location.hostname === "localhost" ||
+  window.location.hostname === "127.0.0.1";
 
-// API_BASE is the backend origin, without /api at the end.
-const API_BASE = IS_LOCAL
-    ? (
-        window.location.port === "8080"
-            ? ""
-            : "http://localhost:8080"
-    )
-    : LIVE_BACKEND_URL;
+const AUTH_BASE = IS_LOCAL
+  ? (window.location.port === "8080" ? "" : "http://localhost:8080")
+  : LIVE_BACKEND_URL;
 
-const response = await fetch(`${API_BASE}/api/csrf`, {
-  method: "GET",
-  credentials: "include",
-  headers: {
-    Accept: "application/json"
+const ENDPOINTS = {
+  userRegister: `${AUTH_BASE}/api/auth/signup/user`,
+  vendorRegister: `${AUTH_BASE}/api/auth/signup/vendor`,
+  login: `${AUTH_BASE}/api/auth/login`
+};
+
+async function getAuthCsrfToken() {
+  try {
+    const response = await fetch(`${AUTH_BASE}/api/csrf`, {
+      method: "GET",
+      credentials: "include",
+      headers: { "Accept": "application/json" }
+    });
+    if (!response.ok) return "";
+    const data = await response.json();
+    return data.token || "";
+  } catch {
+    return "";
   }
-});
-
-
-
-async function getCsrfToken() {
-  const response = await fetch(`${API_BASE}/api/csrf`, {
-    method: "GET",
-    credentials: "include",
-    headers: {
-      "Accept": "application/json"
-    }
-  });
-
-  if (!response.ok) {
-    throw new Error(
-        `Could not obtain CSRF token (${response.status}).`
-    );
-  }
-
-  const data = await response.json();
-
-  const cookieToken = document.cookie
-      .split("; ")
-      .find(cookie => cookie.startsWith("XSRF-TOKEN="))
-      ?.split("=")
-      .slice(1)
-      .join("=");
-
-  const token = cookieToken
-      ? decodeURIComponent(cookieToken)
-      : data.token;
-
-  if (!token) {
-    throw new Error("CSRF token is missing.");
-  }
-
-  return token;
 }
-
-
-
 
 const form = document.getElementById("authForm");
 const statusMessage = document.getElementById("statusMessage");
@@ -84,11 +52,12 @@ let currentRole = "user";
 let currentMode = "signup";
 
 function updateHouseholdActionFields() {
+  if (!householdActionSelect) return;
   const joining = householdActionSelect.value === "JOIN";
-
-  createHouseholdFields.hidden = joining;
-  joinHouseholdFields.hidden = !joining;
+  if (createHouseholdFields) createHouseholdFields.hidden = joining;
+  if (joinHouseholdFields) joinHouseholdFields.hidden = !joining;
 }
+
 function setRole(role) {
   currentRole = role;
   document.querySelectorAll("[data-role]").forEach(button => {
@@ -96,8 +65,8 @@ function setRole(role) {
     button.classList.toggle("active", selected);
     button.setAttribute("aria-selected", String(selected));
   });
-  vendorFields.hidden = role !== "vendor" || currentMode !== "signup";
-  householdFields.hidden = role !== "user" || currentMode !== "signup";
+  if (vendorFields) vendorFields.hidden = role !== "vendor" || currentMode !== "signup";
+  if (householdFields) householdFields.hidden = role !== "user" || currentMode !== "signup";
   updateLabels();
   clearStatus();
   updateHouseholdActionFields();
@@ -110,11 +79,13 @@ function setMode(mode) {
     button.classList.toggle("active", selected);
     button.setAttribute("aria-selected", String(selected));
   });
-  signupFields.hidden = mode === "login";
-  password.autocomplete = mode === "login" ? "current-password" : "new-password";
-  passwordHint.hidden = mode === "login";
-  vendorFields.hidden = mode !== "signup" || currentRole !== "vendor";
-  householdFields.hidden = mode !== "signup" || currentRole !== "user";
+  if (signupFields) signupFields.hidden = mode === "login";
+  if (password) {
+    password.autocomplete = mode === "login" ? "current-password" : "new-password";
+  }
+  if (passwordHint) passwordHint.hidden = mode === "login";
+  if (vendorFields) vendorFields.hidden = mode !== "signup" || currentRole !== "vendor";
+  if (householdFields) householdFields.hidden = mode !== "signup" || currentRole !== "user";
   clearErrors();
   clearStatus();
   updateLabels();
@@ -123,41 +94,55 @@ function setMode(mode) {
 
 function updateLabels() {
   const roleName = currentRole === "vendor" ? "vendor" : "household";
-  submitLabel.textContent = currentMode === "login" ? "Log in to GroceryMate" : `Create ${roleName} account`;
-  switchPromptText.textContent = currentMode === "login" ? "New to GroceryMate?" : "Already have an account?";
-  switchModeButton.textContent = currentMode === "login" ? "Create account" : "Log in";
-  termsText.hidden = currentMode === "login";
+  if (submitLabel) {
+    submitLabel.textContent = currentMode === "login" ? "Log in to GroceryMate" : `Create ${roleName} account`;
+  }
+  if (switchPromptText) {
+    switchPromptText.textContent = currentMode === "login" ? "New to GroceryMate?" : "Already have an account?";
+  }
+  if (switchModeButton) {
+    switchModeButton.textContent = currentMode === "login" ? "Create account" : "Log in";
+  }
+  if (termsText) termsText.hidden = currentMode === "login";
 }
 
 function clearStatus() {
+  if (!statusMessage) return;
   statusMessage.hidden = true;
   statusMessage.textContent = "";
   statusMessage.className = "status-message";
 }
+
 function showStatus(message, type = "error") {
+  if (!statusMessage) return;
   statusMessage.textContent = message;
   statusMessage.className = `status-message ${type}`;
   statusMessage.hidden = false;
 }
+
 function clearErrors() {
-  document.querySelectorAll(".field-error").forEach(node => node.textContent = "");
+  document.querySelectorAll(".field-error").forEach(node => (node.textContent = ""));
   document.querySelectorAll("input.invalid").forEach(input => input.classList.remove("invalid"));
 }
+
 function setFieldError(name, message) {
   const error = document.querySelector(`[data-error-for="${name}"]`);
   const input = document.getElementById(name);
   if (error) error.textContent = message;
   if (input) input.classList.add("invalid");
 }
+
 function value(name) {
-  return document.getElementById(name).value.trim();
+  const elem = document.getElementById(name);
+  return elem ? elem.value.trim() : "";
 }
+
 function validate() {
   clearErrors();
   let valid = true;
   const email = value("email");
-  const pass = password.value;
-  
+  const pass = password ? password.value : "";
+
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     setFieldError("email", "Enter a valid email address.");
     valid = false;
@@ -167,34 +152,43 @@ function validate() {
     setFieldError("password", currentMode === "login" ? "Enter your password." : "Password must be at least 8 characters.");
     valid = false;
   }
+
   if (currentMode === "signup") {
-    if (!value("fullName")) { setFieldError("fullName", "Enter your full name."); valid = false; }
-    if (currentRole === "vendor" && !value("shopName")) { setFieldError("shopName", "Enter your shop name."); valid = false; }
+    if (!value("fullName")) {
+      setFieldError("fullName", "Enter your full name.");
+      valid = false;
+    }
+    if (currentRole === "vendor" && !value("shopName")) {
+      setFieldError("shopName", "Enter your shop name.");
+      valid = false;
+    }
     if (currentRole === "user") {
-      if (householdActionSelect.value === "CREATE") {
+      if (householdActionSelect && householdActionSelect.value === "CREATE") {
         if (!value("householdName")) {
           setFieldError("householdName", "Enter your household name.");
           valid = false;
         }
-      } else if (householdActionSelect.value === "JOIN") {
+      } else if (householdActionSelect && householdActionSelect.value === "JOIN") {
         const code = value("invitationCode");
-
         if (!code) {
           setFieldError("invitationCode", "Enter the invitation code.");
           valid = false;
         } else if (!/^[A-Za-z0-9]{12}$/.test(code)) {
-          setFieldError(
-            "invitationCode",
-            "Enter the 12-character invitation code."
-          );
+          setFieldError("invitationCode", "Enter the 12-character invitation code.");
           valid = false;
         }
       }
     }
     const phone = value("phone");
-    if (phone && !/^[0-9+\-\s()]{7,15}$/.test(phone)) { setFieldError("phone", "Enter a valid phone number."); valid = false; }
+    if (phone && !/^[0-9+\-\s()]{7,15}$/.test(phone)) {
+      setFieldError("phone", "Enter a valid phone number.");
+      valid = false;
+    }
     const pin = value("pincode");
-    if (pin && !/^[0-9]{6}$/.test(pin)) { setFieldError("pincode", "PIN code must contain 6 digits."); valid = false; }
+    if (pin && !/^[0-9]{6}$/.test(pin)) {
+      setFieldError("pincode", "PIN code must contain 6 digits.");
+      valid = false;
+    }
   }
   return valid;
 }
@@ -204,7 +198,7 @@ function buildRegistrationPayload() {
     fullName: value("fullName"),
     email: value("email").toLowerCase(),
     phone: value("phone") || null,
-    password: password.value
+    password: password ? password.value : ""
   };
   if (currentRole === "vendor") {
     return {
@@ -218,8 +212,8 @@ function buildRegistrationPayload() {
   }
   return {
     ...common,
-    householdAction: householdActionSelect.value,
-    householdName: householdActionSelect.value === "CREATE"
+    householdAction: householdActionSelect ? householdActionSelect.value : "CREATE",
+    householdName: (householdActionSelect && householdActionSelect.value === "CREATE")
       ? value("householdName")
       : null,
     address: value("address") || null,
@@ -227,184 +221,159 @@ function buildRegistrationPayload() {
     state: value("state") || null,
     pincode: value("pincode") || null
   };
-
 }
 
 async function readResponse(response) {
   const text = await response.text();
   if (!text) return {};
-  try { return JSON.parse(text); }
-  catch { return { message: text }; }
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { message: text };
+  }
 }
 
-form.addEventListener("submit", async event => {
-  event.preventDefault();
-  clearStatus();
-  if (!validate()) return;
+if (form) {
+  form.addEventListener("submit", async event => {
+    event.preventDefault();
+    clearStatus();
+    if (!validate()) return;
 
-  submitButton.disabled = true;
-  submitLabel.textContent = currentMode === "login" ? "Logging in…" : "Creating account…";
-  try {
-    let url;
-    let payload;
-    if (currentMode === "signup") {
-      url = currentRole === "vendor" ? ENDPOINTS.vendorRegister : ENDPOINTS.userRegister;
-      payload = buildRegistrationPayload();
-    } else {
-      url = ENDPOINTS.login;
-      // Backend should determine role from its own stored account/profile data.
-      payload = {
-        email: value("email").toLowerCase(),
-        password: password.value,
-        role: currentRole
-      };
+    if (submitButton) submitButton.disabled = true;
+    if (submitLabel) {
+      submitLabel.textContent = currentMode === "login" ? "Logging in…" : "Creating account…";
     }
 
-    
-    const csrfToken = await getCsrfToken();
+    try {
+      let url;
+      let payload;
+      if (currentMode === "signup") {
+        url = currentRole === "vendor" ? ENDPOINTS.vendorRegister : ENDPOINTS.userRegister;
+        payload = buildRegistrationPayload();
+      } else {
+        url = ENDPOINTS.login;
+        payload = {
+          email: value("email").toLowerCase(),
+          password: password ? password.value : "",
+          role: currentRole
+        };
+      }
 
-    const response = await fetch(url, {
-      method: "POST",
-      credentials: "include",
-      headers: {
+      const csrfToken = await getAuthCsrfToken();
+      const requestHeaders = {
         "Content-Type": "application/json",
-        "Accept": "application/json",
-        "X-XSRF-TOKEN": csrfToken
-      },
-      body: JSON.stringify(payload)
-    });
+        "Accept": "application/json"
+      };
+      if (csrfToken) {
+        requestHeaders["X-XSRF-TOKEN"] = csrfToken;
+      }
 
-    const data = await readResponse(response);
+      const response = await fetch(url, {
+        method: "POST",
+        credentials: "include",
+        headers: requestHeaders,
+        body: JSON.stringify(payload)
+      });
 
-    if (!response.ok) {
-      const message = data.message || data.error || (response.status === 409
-        ? "An account with these details already exists."
-        : `Request failed (${response.status}). Check that the Java backend is running and its endpoint matches app.js.`);
-      showStatus(message, "error");
-      return;
-    }
+      const data = await readResponse(response);
 
-    
-  if (currentMode === "signup") {
-    if (
-      currentRole === "user" &&
-      householdActionSelect.value === "JOIN"
-    ) {
-      sessionStorage.setItem(
-        "grocerymate_pending_invitation_code",
-        value("invitationCode").toUpperCase()
-      );
-    } else {
-      sessionStorage.removeItem("grocerymate_pending_invitation_code");
-    }
+      if (!response.ok) {
+        const message =
+          data.message ||
+          data.error ||
+          (response.status === 409
+            ? "An account with these details already exists."
+            : `Request failed (${response.status}). Check that the backend is live.`);
+        showStatus(message, "error");
+        return;
+      }
 
-    showStatus(
-      data.message || "Account created successfully. You can now log in.",
-      "success"
-    );
+      if (currentMode === "signup") {
+        if (
+          currentRole === "user" &&
+          householdActionSelect &&
+          householdActionSelect.value === "JOIN"
+        ) {
+          sessionStorage.setItem(
+            "grocerymate_pending_invitation_code",
+            value("invitationCode").toUpperCase()
+          );
+        } else {
+          sessionStorage.removeItem("grocerymate_pending_invitation_code");
+        }
 
-    setMode("login");
-    password.value = "";
-  }else {
-      // Save the account details returned by the backend.
-      if (
-        data.householdId != null &&
-        Number(data.householdId) > 0
-      ) {
-        localStorage.setItem(
-          "grocerymate_household_id",
-          String(data.householdId)
-        );
+        showStatus(data.message || "Account created successfully. You can now log in.", "success");
+        setMode("login");
+        if (password) password.value = "";
       } else {
-        localStorage.removeItem("grocerymate_household_id");
-      }
+        // Successful Login
+        if (data.householdId != null && Number(data.householdId) > 0) {
+          localStorage.setItem("grocerymate_household_id", String(data.householdId));
+        } else {
+          localStorage.removeItem("grocerymate_household_id");
+        }
 
-      if (data.userId != null) {
-        localStorage.setItem("grocerymate_user_id", String(data.userId));
-      }
+        if (data.userId != null) {
+          localStorage.setItem("grocerymate_user_id", String(data.userId));
+        }
 
-      if (data.vendorId != null) {
-        localStorage.setItem("grocerymate_vendor_id", String(data.vendorId));
-      }
+        if (data.vendorId != null) {
+          localStorage.setItem("grocerymate_vendor_id", String(data.vendorId));
+        }
 
-      const role = String(data.role || currentRole).toUpperCase();
-      localStorage.setItem("grocerymate_role", role);
+        const role = String(data.role || currentRole).toUpperCase();
+        localStorage.setItem("grocerymate_role", role);
 
-      // Your current backend does not return a token.
-      if (data.token) {
-        localStorage.setItem("grocerymate_token", data.token);
-      } else {
-        localStorage.removeItem("grocerymate_token");
-      }
+        if (data.token) {
+          localStorage.setItem("grocerymate_token", data.token);
+        } else {
+          localStorage.setItem("grocerymate_token", "dummy_session_token");
+        }
 
-      showStatus(data.message || "Login successful.", "success");
-      
-      if (role === "USER") {
-        const pendingCode = sessionStorage.getItem(
-          "grocerymate_pending_invitation_code"
-        );
+        showStatus(data.message || "Login successful.", "success");
 
-        if (pendingCode) {
-          const csrfToken = await getCsrfToken();
+        if (role === "USER") {
+          const pendingCode = sessionStorage.getItem("grocerymate_pending_invitation_code");
+          if (pendingCode) {
+            const token = await getAuthCsrfToken();
+            const acceptHeaders = {
+              "Content-Type": "application/json",
+              "Accept": "application/json"
+            };
+            if (token) acceptHeaders["X-XSRF-TOKEN"] = token;
 
-          const acceptResponse = await fetch(
-            `${API_BASE}/api/household/invitations/accept`,
-            {
+            const acceptResponse = await fetch(`${AUTH_BASE}/api/household/invitations/accept`, {
               method: "POST",
               credentials: "include",
-              headers: {
-                "Content-Type": "application/json",
-                "Accept": "application/json",
-                "X-XSRF-TOKEN": csrfToken
-              },
-              body: JSON.stringify({
-                invitationCode: pendingCode
-              })
+              headers: acceptHeaders,
+              body: JSON.stringify({ invitationCode: pendingCode })
+            });
+
+            const acceptData = await readResponse(acceptResponse);
+            if (acceptResponse.ok && acceptData.householdId) {
+              localStorage.setItem("grocerymate_household_id", String(acceptData.householdId));
+              sessionStorage.removeItem("grocerymate_pending_invitation_code");
             }
-          );
-
-          const acceptData = await readResponse(acceptResponse);
-
-          if (!acceptResponse.ok) {
-            showStatus(
-              acceptData.message || "Could not accept the household invitation.",
-              "error"
-            );
-            return;
           }
+        }
 
-          // Save the household returned by the backend.
-          localStorage.setItem(
-            "grocerymate_household_id",
-            String(acceptData.householdId)
-          );
-
-          sessionStorage.removeItem("grocerymate_pending_invitation_code");
-
-          showStatus(
-            "Invitation accepted. You have joined the household!",
-            "success"
-          );
+        if (role === "VENDOR") {
+          window.location.assign("vendor-dashboard.html");
+        } else if (role === "USER") {
+          window.location.assign("user-dashboard.html");
+        } else {
+          showStatus("Login succeeded, but account role is unrecognized.", "error");
         }
       }
-
-      if (role === "VENDOR") {
-        window.location.assign("vendor-dashboard.html");
-      } else if (role === "USER") {
-        window.location.assign("user-dashboard.html");
-      } else {
-        showStatus("Login succeeded, but the account role is unrecognized.", "error");
-      }
-    
+    } catch (error) {
+      showStatus(`Could not connect to backend at ${AUTH_BASE}. Please try again shortly.`, "error");
+      console.error("GroceryMate auth request failed:", error);
+    } finally {
+      if (submitButton) submitButton.disabled = false;
+      updateLabels();
     }
-  } catch (error) {
-    showStatus(`Could not connect to the Java backend at ${API_BASE}. Start Spring Boot and check the endpoint/CORS settings.`, "error");
-    console.error("GroceryMate auth request failed:", error);
-  } finally {
-    submitButton.disabled = false;
-    updateLabels();
-  }
-});
+  });
+}
 
 document.querySelectorAll("[data-role]").forEach(button => {
   button.addEventListener("click", () => setRole(button.dataset.role));
@@ -412,16 +381,21 @@ document.querySelectorAll("[data-role]").forEach(button => {
 document.querySelectorAll("[data-mode]").forEach(button => {
   button.addEventListener("click", () => setMode(button.dataset.mode));
 });
-switchModeButton.addEventListener("click", () => setMode(currentMode === "login" ? "signup" : "login"));
-togglePassword.addEventListener("click", () => {
-  const show = password.type === "password";
-  password.type = show ? "text" : "password";
-  togglePassword.textContent = show ? "Hide" : "Show";
-});
-householdActionSelect.addEventListener(
-  "change",
-  updateHouseholdActionFields
-);
+if (switchModeButton) {
+  switchModeButton.addEventListener("click", () =>
+    setMode(currentMode === "login" ? "signup" : "login")
+  );
+}
+if (togglePassword && password) {
+  togglePassword.addEventListener("click", () => {
+    const show = password.type === "password";
+    password.type = show ? "text" : "password";
+    togglePassword.textContent = show ? "Hide" : "Show";
+  });
+}
+if (householdActionSelect) {
+  householdActionSelect.addEventListener("change", updateHouseholdActionFields);
+}
 
 setRole("user");
 setMode("signup");
