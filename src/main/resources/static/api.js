@@ -1,10 +1,25 @@
 
-const API_BASE =
-    window.location.protocol === "file:"
-        ? "http://localhost:8080/api"
-        : window.location.port === "8080"
+const LIVE_BACKEND_URL =
+    "https://YOUR-ACTUAL-BACKEND.onrender.com";
+
+const IS_LOCAL =
+    window.location.hostname === "localhost" ||
+    window.location.hostname === "127.0.0.1";
+
+const API_BASE = IS_LOCAL
+    ? (
+        window.location.port === "8080"
             ? "/api"
-            : "http://localhost:8080/api";
+            : "http://localhost:8080/api"
+      )
+    : `${LIVE_BACKEND_URL}/api`;
+
+// const API_BASE =
+//     window.location.protocol === "file:"
+//         ? "http://localhost:8080/api"
+//         : window.location.port === "8080"
+//             ? "/api"
+//             : "http://localhost:8080/api";
 
 // Read the CSRF cookie created by Spring Security.
 function getCookie(name) {
@@ -24,7 +39,8 @@ function getCookie(name) {
 async function getCsrfToken() {
     const response = await fetch(`${API_BASE}/csrf`, {
         method: "GET",
-        credentials: "same-origin",
+        credentials: "include",
+        // credentials: "same-origin",
         headers: {
             Accept: "application/json"
         }
@@ -79,7 +95,8 @@ async function apiRequest(path, options = {}) {
         ...options,
         method,
         headers,
-        credentials: "same-origin"
+        credentials: "include"
+        // credentials: "same-origin"
     });
 
     const text = await response.text();

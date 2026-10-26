@@ -15,7 +15,8 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import java.util.List;
-
+import org.springframework.beans.factory.annotation.Value;
+import java.util.Arrays;
 @Configuration
 public class SecurityConfig {
 
@@ -60,22 +61,26 @@ public class SecurityConfig {
         return http.build();
     }
 
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
 
-        // Use the Spring Boot-served frontend.
-        config.setAllowedOrigins(List.of(
-                "http://localhost:8080",
-                "http://127.0.0.1:8080"
-        ));
+        config.setAllowedOrigins(
+                Arrays.stream(allowedOrigins.split(","))
+                        .map(String::trim)
+                        .filter(origin -> !origin.isEmpty())
+                        .toList()
+        );
 
         config.setAllowedMethods(List.of(
                 "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"
         ));
 
         config.setAllowedHeaders(List.of(
-                "Content-Type", "Accept", "X-XSRF-TOKEN"
+                "Content-Type",
+                "Accept",
+                "X-XSRF-TOKEN"
         ));
 
         config.setAllowCredentials(true);
@@ -84,6 +89,36 @@ public class SecurityConfig {
                 new UrlBasedCorsConfigurationSource();
 
         source.registerCorsConfiguration("/**", config);
+
         return source;
     }
+
+    //    @Bean
+//    public CorsConfigurationSource corsConfigurationSource() {
+//        CorsConfiguration config = new CorsConfiguration();
+//
+//        // Use the Spring Boot-served frontend.
+//        config.setAllowedOrigins(List.of(
+//                "http://localhost:8080",
+//                "http://127.0.0.1:8080"
+//        ));
+//
+//        config.setAllowedMethods(List.of(
+//                "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"
+//        ));
+//
+//        config.setAllowedHeaders(List.of(
+//                "Content-Type", "Accept", "X-XSRF-TOKEN"
+//        ));
+//
+//        config.setAllowCredentials(true);
+//
+//        UrlBasedCorsConfigurationSource source =
+//                new UrlBasedCorsConfigurationSource();
+//
+//        source.registerCorsConfiguration("/**", config);
+//        return source;
+//    }
+    @Value("${cors.allowed.origins}")
+    private String allowedOrigins;
 }

@@ -2,7 +2,8 @@ const ITEMS_API = "/household/items";
 const SPENDING_API = "/household/spending/monthly";
 const UPCOMING_API = "/household/purchases/upcoming";
 const PREDICTION_API = "/household/items";
-const SPENDING_ANALYTICS_API = "/household/spending/analytics"; 
+const SPENDING_ANALYTICS_API = "/household/spending/analytics";
+const ORDER_TRACKER_API = "/household/orders"; 
 function getField(item, snake, camel, fallback = null) {
     return item[snake] ?? item[camel] ?? fallback;
 }
@@ -14,10 +15,29 @@ function showMessage(message, success = false) {
     element.style.color = success ? "#17642b" : "#b42318";
 }
 
+
 function formatDate(value) {
     if (!value) return "—";
-    return String(value).replace("T", " ").slice(0, 16);
+
+    // Parse the timestamp, including its timezone offset.
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+        return String(value).replace("T", " ").slice(0, 16);
+    }
+
+    // Display the timestamp in the browser's local timezone.
+    return date.toLocaleString("en-IN", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: true
+    });
 }
+
 
 function money(amount) {
     const num = Number(amount || 0);
@@ -1908,4 +1928,319 @@ async function logout() {
         window.location.replace("index.html");
     }
 }
+
+/* ---------------- Order Tracker ---------------- */
+
+
+const orderTrackerList = document.getElementById("orderTrackerList");
+const orderTrackerMessage = document.getElementById("orderTrackerMessage");
+
+function orderField(order, snake, camel, fallback = null) {
+    return order?.[snake] ?? order?.[camel] ?? fallback;
+}
+
+function orderStatusLabel(status) {
+    const labels = {
+        PLACED: "Order placed",
+        PROCESSING: "Processing",
+        SHIPPED: "On the way",
+        DELIVERED: "Delivered",
+        CANCELLED: "Cancelled"
+    };
+
+    return labels[String(status || "").toUpperCase()] || "Status unavailable";
+}
+
+function renderOrderHistory(order) {
+    const history = orderField(
+        order,
+        "statusHistory",
+        "statusHistory",
+        []
+    );
+
+    const timeline = document.createElement("div");
+    timeline.className = "order-tracker-timeline";
+
+    const title = document.createElement("h4");
+    title.textContent = "Order updates";
+    timeline.appendChild(title);
+
+    if (!Array.isArray(history) || history.length === 0) {
+        const empty = document.createElement("p");
+        empty.textContent = "No detailed order updates available yet.";
+        timeline.appendChild(empty);
+        return timeline;
+    }
+
+    history.forEach(event => {
+        const entry = document.createElement("div");
+        entry.className = "order-timeline-event";
+
+        const eventStatus = orderField(
+            event, "status", "status", ""
+        );
+
+        const eventDescription = orderField(
+            event,
+            "description",
+            "description",
+            orderStatusLabel(eventStatus)
+        );
+
+        const eventDate = orderField(
+            event, "created_at", "createdAt"
+        );
+
+        const eventTitle = document.createElement("strong");
+        eventTitle.textContent = orderStatusLabel(eventStatus);
+
+        const description = document.createElement("p");
+        description.textContent = eventDescription;
+
+        const date = document.createElement("small");
+        date.textContent = formatDate(eventDate);
+
+        entry.append(eventTitle, description, date);
+        timeline.appendChild(entry);
+    });
+
+    return timeline;
+}
+
+
+
+function renderOrderTracker(orders) {
+    if (!orderTrackerList) return;
+
+    orderTrackerList.replaceChildren();
+
+    if (!Array.isArray(orders) || orders.length === 0) {
+        const empty = document.createElement("p");
+        empty.className = "order-tracker-empty";
+        empty.textContent = "You don't have any vendor orders yet.";
+        orderTrackerList.appendChild(empty);
+        return;
+    }
+
+    // API returns newest orders first. Keep the first five on the dashboard.
+    const recentOrders = orders.slice(0, 5);
+    const pastOrders = orders.slice(5);
+
+    // Create a container for each order.
+    function createOrderCard(order) {
+        const card = document.createElement("article");
+        card.className = "order-tracker-card";
+
+        const orderId = orderField(
+            order, "vendor_order_id", "vendorOrderId", "—"
+        );
+
+        const status = String(
+            orderField(order, "order_status", "orderStatus", "")
+        ).toUpperCase();
+
+        const productName = orderField(
+            order,
+            "product_name",
+            "productName",
+            orderField(order, "item_name", "itemName", "Grocery order")
+        );
+
+        const quantity = orderField(order, "quantity", "quantity");
+        const unit = orderField(order, "unit", "unit", "");
+        const total = orderField(order, "total_amount", "totalAmount");
+        const orderedAt = orderField(
+            order, "ordered_at", "orderedAt"
+        );
+
+        const header = document.createElement("div");
+        header.className = "order-tracker-compact-header";
+
+        const details = document.createElement("div");
+        details.className = "order-tracker-compact-details";
+
+        const heading = document.createElement("h3");
+        heading.textContent = `Order #${orderId}`;
+
+        const productLine = document.createElement("p");
+        productLine.className = "order-tracker-product";
+        productLine.textContent =
+            `${productName} · ${quantity ?? "—"} ${unit}`.trim();
+
+        const dateLine = document.createElement("small");
+        dateLine.textContent = `Ordered ${formatDate(orderedAt)}`;
+
+        details.append(heading, productLine, dateLine);
+
+        const summary = document.createElement("div");
+        summary.className = "order-tracker-summary";
+
+        const statusBadge = document.createElement("span");
+        statusBadge.className =
+            "order-tracker-status-badge " + status.toLowerCase();
+        statusBadge.textContent = orderStatusLabel(status);
+
+        const totalLine = document.createElement("strong");
+        totalLine.className = "order-tracker-total";
+        totalLine.textContent = total == null ? "—" : money(total);
+
+        summary.append(statusBadge, totalLine);
+        header.append(details, summary);
+
+        const detailsPanel = document.createElement("div");
+        detailsPanel.className = "order-tracker-details";
+        detailsPanel.hidden = true;
+
+        const expectedAt = orderField(
+            order, "expected_delivery_at", "expectedDeliveryAt"
+        );
+
+        const deliveryLine = document.createElement("p");
+        deliveryLine.className = "order-tracker-delivery";
+        deliveryLine.textContent =
+            `Expected delivery: ${formatDate(expectedAt)}`;
+        detailsPanel.appendChild(deliveryLine);
+
+        if (status === "CANCELLED") {
+            const cancelled = document.createElement("p");
+            cancelled.className = "order-tracker-cancelled";
+            cancelled.textContent = "This order has been cancelled.";
+            detailsPanel.appendChild(cancelled);
+        } else {
+            const progress = document.createElement("ol");
+            progress.className = "order-tracker-progress";
+
+            const stages = [
+                ["PLACED", "Placed"],
+                ["PROCESSING", "Processing"],
+                ["SHIPPED", "Shipped"],
+                ["DELIVERED", "Delivered"]
+            ];
+
+            const currentIndex = stages.findIndex(
+                ([stage]) => stage === status
+            );
+
+            stages.forEach(([stage, label], index) => {
+                const step = document.createElement("li");
+                step.textContent = label;
+                step.className = "order-tracker-step";
+
+                if (currentIndex >= 0 && index <= currentIndex) {
+                    step.classList.add("completed");
+                }
+
+                if (stage === status) {
+                    step.classList.add("current");
+                    step.setAttribute("aria-current", "step");
+                }
+
+                progress.appendChild(step);
+            });
+
+            detailsPanel.appendChild(progress);
+        }
+
+        detailsPanel.appendChild(renderOrderHistory(order));
+
+        const toggle = document.createElement("button");
+        toggle.type = "button";
+        toggle.className = "order-tracker-toggle";
+        toggle.textContent = "View tracking";
+        toggle.setAttribute("aria-expanded", "false");
+
+        toggle.addEventListener("click", () => {
+            const willOpen = detailsPanel.hidden;
+
+            // Only one tracking timeline can be open at a time.
+            orderTrackerList
+                .querySelectorAll(".order-tracker-details")
+                .forEach(panel => {
+                    panel.hidden = true;
+                });
+
+            orderTrackerList
+                .querySelectorAll(".order-tracker-toggle")
+                .forEach(button => {
+                    button.textContent = "View tracking";
+                    button.setAttribute("aria-expanded", "false");
+                });
+
+            if (willOpen) {
+                detailsPanel.hidden = false;
+                toggle.textContent = "Hide tracking";
+                toggle.setAttribute("aria-expanded", "true");
+            }
+        });
+
+        card.append(header, toggle, detailsPanel);
+        return card;
+    }
+
+    // Section 1: the five most recent orders.
+    const recentSection = document.createElement("div");
+    recentSection.className = "order-tracker-recent";
+
+    recentOrders.forEach(order => {
+        recentSection.appendChild(createOrderCard(order));
+    });
+
+    orderTrackerList.appendChild(recentSection);
+
+    // Section 2: all remaining orders, shown only when requested.
+    if (pastOrders.length > 0) {
+        const pastSection = document.createElement("details");
+        pastSection.className = "order-tracker-past";
+
+        const pastHeading = document.createElement("summary");
+        pastHeading.className = "order-tracker-past-heading";
+        pastHeading.textContent =
+            `Order History (Past Orders) · ${pastOrders.length}`;
+
+        const pastList = document.createElement("div");
+        pastList.className = "order-tracker-past-list";
+
+        pastOrders.forEach(order => {
+            pastList.appendChild(createOrderCard(order));
+        });
+
+        pastSection.append(pastHeading, pastList);
+        orderTrackerList.appendChild(pastSection);
+    }
+}
+
+
+async function loadOrderTracker() {
+    if (!orderTrackerList) return;
+
+    if (orderTrackerMessage) {
+        orderTrackerMessage.textContent = "Loading your orders...";
+    }
+
+    try {
+        const result = await apiRequest(ORDER_TRACKER_API);
+
+        const orders = Array.isArray(result)
+            ? result
+            : Array.isArray(result?.orders)
+                ? result.orders
+                : [];
+
+        renderOrderTracker(orders);
+
+        if (orderTrackerMessage) {
+            orderTrackerMessage.textContent = "";
+        }
+    } catch (error) {
+        console.error("Could not load order tracker:", error);
+
+        if (orderTrackerMessage) {
+            orderTrackerMessage.textContent =
+                "Could not load your orders. Please try refreshing.";
+        }
+    }
+}
+
 loadDashboard();
+loadOrderTracker();

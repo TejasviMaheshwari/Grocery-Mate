@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>GroceryMate | User Dashboard</title>
     <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
 </head>
 <body>
 <header>
@@ -25,7 +27,9 @@
                 aria-label="Notifications, 0 unread"
                 aria-expanded="false"
                 aria-controls="notificationPanel">
-                <span aria-hidden="true">♧</span>
+                <span aria-hidden="true"><i style="color:black;font-size: medium;" class="fa fa-bell"></i></span>
+
+                <!--                <span aria-hidden="true">♧</span>-->
                 <span id="notificationBadge" class="notification-badge" hidden>0</span>
             </button>
 
@@ -270,6 +274,13 @@
 
         <p id="requestItemMessage" role="status" aria-live="polite"></p>
     </section>
+        
+    <section class="order-tracker-section">
+        <h2>My Orders</h2>
+        <p id="orderTrackerMessage" role="status"></p>
+        <div id="orderTrackerList"></div>
+    </section>
+
     <section id="essentials">
         <h2>My Household Essentials</h2>
         <p class="legend">

@@ -232,11 +232,22 @@ public class VendorWorkflowService {
                 unitPrice.multiply(quantity)
                         .setScale(2, RoundingMode.HALF_UP));
 
+
         order.setOrderStatus("PLACED");
         order.setOrderedAt(LocalDateTime.now());
         order.setNotes("Created from purchase request #" + requestId);
 
-        return orderRepository.save(order);
+        VendorOrders savedOrder = orderRepository.save(order);
+
+        recordOrderStatus(
+                savedOrder.getVendorOrderId(),
+                "PLACED",
+                "Order placed and sent to the vendor.",
+                savedOrder.getOrderedAt()
+        );
+
+        return savedOrder;
+
     }
 
     // --------------------------------------------------
@@ -319,9 +330,35 @@ public class VendorWorkflowService {
         }
 
 
+
         order.setOrderStatus(status);
 
         VendorOrders savedOrder = orderRepository.save(order);
+
+        if (!status.equalsIgnoreCase(currentStatus)) {
+            String description = switch (status) {
+                case "PLACED" ->
+                        "Your order has been placed.";
+                case "PROCESSING" ->
+                        "The vendor is preparing your order.";
+                case "SHIPPED" ->
+                        "Your order is on its way.";
+                case "DELIVERED" ->
+                        "Your order has been delivered.";
+                case "CANCELLED" ->
+                        "Your order was cancelled.";
+                default ->
+                        "Your order status has been updated.";
+            };
+
+            recordOrderStatus(
+                    savedOrder.getVendorOrderId(),
+                    status,
+                    description,
+                    LocalDateTime.now()
+            );
+        }
+
 
         // Keep the related request's status in sync on delivery.
         if ("DELIVERED".equals(status)
@@ -535,5 +572,26 @@ public class VendorWorkflowService {
                 newQuantity,
                 "Vendor order #" + order.getVendorOrderId() + " delivered");
     }
+
+    // --------------------------------------------------
+    // Save a status event for the user's order tracker
+    // --------------------------------------------------
+    private void recordOrderStatus(
+            Long orderId,
+            String status,
+            String description,
+            LocalDateTime createdAt) {
+
+        jdbcTemplate.update("""
+            INSERT INTO vendor_order_status_history
+                (vendor_order_id, status, description, created_at)
+            VALUES (?, ?, ?, ?)
+            """,
+                orderId,
+                status,
+                description,
+                createdAt != null ? createdAt : LocalDateTime.now());
+    }
+
 
 }

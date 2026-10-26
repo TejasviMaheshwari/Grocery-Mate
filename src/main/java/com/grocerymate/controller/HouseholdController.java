@@ -1637,6 +1637,87 @@ public class HouseholdController {
 
         return ResponseEntity.ok(result);
     }
+
+    // GET /api/household/orders
+    // Returns orders belonging only to the authenticated user's household.
+    @GetMapping("/orders")
+    public ResponseEntity<?> getOrderTracker(
+            Authentication authentication) {
+
+        if (authentication == null
+                || !(authentication.getPrincipal()
+                instanceof AuthenticatedAccount account)) {
+            return error(HttpStatus.UNAUTHORIZED,
+                    "Please log in again.");
+        }
+
+        if (!"USER".equalsIgnoreCase(account.role())
+                || account.householdId() == null) {
+            return error(HttpStatus.FORBIDDEN,
+                    "You are not authorized to view these orders.");
+        }
+
+        Long householdId = account.householdId();
+
+        try {
+            List<Map<String, Object>> orders =
+                    jdbcTemplate.queryForList("""
+                    SELECT
+                        vo.vendor_order_id,
+                        vo.household_id,
+                        vo.vendor_id,
+                        vo.purchase_request_id,
+                        vo.item_id,
+                        vo.vendor_product_id,
+                        COALESCE(vp.product_name, hi.item_name,
+                                 'Grocery order') AS product_name,
+                        vo.quantity,
+                        vo.unit,
+                        vo.unit_price,
+                        vo.total_amount,
+                        vo.order_status,
+                        vo.ordered_at,
+                        vo.expected_delivery_at,
+                        vo.delivered_at,
+                        vo.notes
+                    FROM vendor_orders vo
+                    LEFT JOIN vendor_products vp
+                        ON vp.product_id = vo.vendor_product_id
+                    LEFT JOIN household_items hi
+                        ON hi.item_id = vo.item_id
+                       AND hi.household_id = vo.household_id
+                    WHERE vo.household_id = ?
+                    ORDER BY vo.ordered_at DESC,
+                             vo.vendor_order_id DESC
+                    """, householdId);
+
+            for (Map<String, Object> order : orders) {
+                Long orderId = ((Number)
+                        order.get("vendor_order_id")).longValue();
+
+                List<Map<String, Object>> history =
+                        jdbcTemplate.queryForList("""
+                        SELECT
+                            history_id,
+                            status,
+                            description,
+                            created_at
+                        FROM vendor_order_status_history
+                        WHERE vendor_order_id = ?
+                        ORDER BY created_at ASC, history_id ASC
+                        """, orderId);
+
+                order.put("statusHistory", history);
+            }
+
+            return ResponseEntity.ok(orders);
+
+        } catch (Exception e) {
+            return error(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Could not load your order tracker.");
+        }
+    }
+
     private boolean validId(Long id) {
         return id != null && id > 0;
     }

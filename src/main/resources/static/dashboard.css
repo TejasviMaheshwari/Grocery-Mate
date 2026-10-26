@@ -1899,3 +1899,279 @@ small, .muted, .analytics-description { color: var(--hp-muted); }
   .dashboard-nav a { padding: 7px 10px; font-size: 13px; }
   .stats { gap: 10px; }
 }
+
+.order-tracker-timeline {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.order-tracker-timeline h4 {
+    margin: 0 0 14px;
+    color: #243b2b;
+}
+
+.order-timeline-event {
+    position: relative;
+    margin: 0 0 16px 8px;
+    padding: 0 0 0 18px;
+    border-left: 2px solid #b8d8bf;
+}
+
+.order-timeline-event::before {
+    content: "";
+    position: absolute;
+    left: -6px;
+    top: 3px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #26834a;
+}
+
+.order-timeline-event strong {
+    display: block;
+    margin-bottom: 4px;
+    color: #245b37;
+}
+
+.order-timeline-event p {
+    margin: 0 0 5px;
+    color: #4b5563;
+}
+
+.order-timeline-event small {
+    color: #6b7280;
+}
+
+.order-tracker-cancelled {
+    color: #b45309;
+    font-weight: 600;
+}
+
+/* GroceryMate compact order tracker */
+
+.order-tracker-card {
+    background: #fff;
+    border: 1px solid #e7e4dc;
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+}
+
+.order-tracker-compact-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+}
+
+.order-tracker-compact-details {
+    min-width: 0;
+}
+
+.order-tracker-compact-details h3 {
+    margin: 0 0 5px;
+    font-size: 15px;
+}
+
+.order-tracker-product {
+    margin: 4px 0;
+    color: #34483c;
+    font-size: 14px;
+}
+
+.order-tracker-compact-details small {
+    color: #777;
+    font-size: 12px;
+}
+
+.order-tracker-summary {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 7px;
+    flex-shrink: 0;
+}
+
+.order-tracker-status-badge {
+    display: inline-block;
+    padding: 5px 9px;
+    border-radius: 20px;
+    background: #edf3ee;
+    color: #315b40;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.order-tracker-status-badge.processing {
+    background: #fff2d9;
+    color: #875600;
+}
+
+.order-tracker-status-badge.shipped {
+    background: #e8efff;
+    color: #244d9b;
+}
+
+.order-tracker-status-badge.delivered {
+    background: #e5f5e9;
+    color: #17642b;
+}
+
+.order-tracker-status-badge.cancelled {
+    background: #fce8e6;
+    color: #b42318;
+}
+
+.order-tracker-total {
+    color: #245b42;
+    font-size: 14px;
+}
+
+.order-tracker-toggle {
+    margin-top: 12px;
+    padding: 7px 12px;
+    border: 1px solid #d9e4dc;
+    border-radius: 7px;
+    background: #f6f8f4;
+    color: #245b42;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.order-tracker-toggle:hover {
+    background: #eaf1e9;
+}
+
+.order-tracker-details {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid #ecebe6;
+}
+
+.order-tracker-delivery {
+    color: #555;
+    font-size: 13px;
+}
+
+.order-tracker-details[hidden] {
+    display: none !important;
+}
+
+.order-tracker-timeline {
+    margin-top: 14px;
+}
+
+.order-tracker-timeline h4 {
+    font-size: 13px;
+}
+
+.order-timeline-event {
+    padding: 0 0 12px 14px;
+    margin-left: 4px;
+    border-left: 2px solid #dce8dd;
+    position: relative;
+}
+
+.order-timeline-event::before {
+    content: "";
+    position: absolute;
+    left: -5px;
+    top: 3px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #2f8050;
+}
+
+.order-timeline-event strong {
+    font-size: 12px;
+    color: #245b42;
+}
+
+.order-timeline-event p {
+    margin: 4px 0;
+    font-size: 12px;
+}
+
+.order-timeline-event small {
+    color: #777;
+    font-size: 11px;
+}
+
+.order-tracker-progress {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 20px;
+    padding-left: 20px;
+    font-size: 12px;
+}
+
+.order-tracker-step.completed {
+    color: #267344;
+}
+
+.order-tracker-step.current {
+    font-weight: 700;
+}
+
+.order-tracker-cancelled {
+    color: #b42318;
+    font-weight: 600;
+}
+
+@media (max-width: 520px) {
+    .order-tracker-card {
+        padding: 12px;
+    }
+
+    .order-tracker-compact-header {
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .order-tracker-compact-details h3 {
+        font-size: 13px;
+    }
+
+    .order-tracker-product {
+        overflow-wrap: anywhere;
+    }
+
+    .order-tracker-status-badge {
+        font-size: 10px;
+    }
+}
+
+/* Past orders section */
+
+.order-tracker-past {
+    margin-top: 16px;
+    border-top: 1px solid #e7e4dc;
+    padding-top: 12px;
+}
+
+.order-tracker-past-heading {
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: #f5f6f1;
+    color: #245b42;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    list-style-position: inside;
+}
+
+.order-tracker-past-heading:hover {
+    background: #eaf1e9;
+}
+
+.order-tracker-past-list {
+    padding-top: 12px;
+}
+
+.order-tracker-past .order-tracker-card:last-child {
+    margin-bottom: 0;
+}
