@@ -43,8 +43,7 @@ public class CatalogController {
                 FROM items_catalog c
                 LEFT JOIN catalog_item_aliases a
                     ON a.catalog_item_id = c.catalog_item_id
-                WHERE c.catalog_item_id <> 1
-                  AND (
+                WHERE  (
                       LOWER(c.item_name) LIKE ?
                       OR a.normalized_alias LIKE ?
                   )

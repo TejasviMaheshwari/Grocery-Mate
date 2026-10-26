@@ -56,7 +56,6 @@ public class VendorProductService {
                     c.normalized_item_name = ?
                     OR a.normalized_alias = ?
                 )
-                AND c.catalog_item_id <> 1
                 """,
                 Long.class,
                 normalizedName,

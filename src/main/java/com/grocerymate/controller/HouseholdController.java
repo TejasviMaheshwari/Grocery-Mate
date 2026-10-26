@@ -524,7 +524,6 @@ public class HouseholdController {
                         c.normalized_item_name = LOWER(TRIM(?))
                         OR a.normalized_alias = LOWER(TRIM(?))
                     )
-                    AND c.catalog_item_id <> 1
                     """, itemName, itemName);
 
             long catalogItemId;
