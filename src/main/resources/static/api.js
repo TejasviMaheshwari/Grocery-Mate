@@ -4,11 +4,17 @@ const IS_LOCAL =
     window.location.hostname === "localhost" ||
     window.location.hostname === "127.0.0.1";
 
-const API_BASE = IS_LOCAL
+const AUTH_BASE = IS_LOCAL
     ? (window.location.port === "8080"
         ? ""
         : "http://localhost:8080")
-    : window.location.origin;
+    : LIVE_BACKEND_URL;
+
+// const API_BASE = IS_LOCAL
+//     ? (window.location.port === "8080"
+//         ? ""
+//         : "http://localhost:8080")
+//     : window.location.origin;
 
 // Read the CSRF cookie created by Spring Security.
 function getCookie(name) {
@@ -95,17 +101,17 @@ async function apiRequest(path, options = {}) {
         headers["Content-Type"] = "application/json";
     }
 
-    if (!["GET", "HEAD", "OPTIONS", "TRACE"].includes(method)) {
-        const csrfToken = await getCsrfToken();
-
-        if (!csrfToken) {
-            throw new Error(
-                "CSRF token missing. Check your Spring Security configuration."
-            );
-        }
-
-        headers["X-XSRF-TOKEN"] = csrfToken;
-    }
+    // if (!["GET", "HEAD", "OPTIONS", "TRACE"].includes(method)) {
+    //     const csrfToken = await getCsrfToken();
+    //
+    //     if (!csrfToken) {
+    //         throw new Error(
+    //             "CSRF token missing. Check your Spring Security configuration."
+    //         );
+    //     }
+    //
+    //     headers["X-XSRF-TOKEN"] = csrfToken;
+    // }
 
     const response = await fetch(`${API_BASE}/api${path}`, {
         ...options,

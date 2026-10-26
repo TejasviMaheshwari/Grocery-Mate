@@ -6,10 +6,16 @@ const IS_LOCAL =
   window.location.hostname === "127.0.0.1";
 
 const AUTH_BASE = IS_LOCAL
-  ? (window.location.port === "8080"
-      ? ""
-      : "http://localhost:8080")
-  : window.location.origin;
+    ? (window.location.port === "8080"
+        ? ""
+        : "http://localhost:8080")
+    : LIVE_BACKEND_URL;
+
+// const AUTH_BASE = IS_LOCAL
+//   ? (window.location.port === "8080"
+//       ? ""
+//       : "http://localhost:8080")
+//   : window.location.origin;
 
 const ENDPOINTS = {
   userRegister: `${AUTH_BASE}/api/auth/signup/user`,
