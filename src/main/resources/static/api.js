@@ -1,4 +1,3 @@
-
 const LIVE_BACKEND_URL =
     "https://YOUR-ACTUAL-BACKEND.onrender.com";
 
