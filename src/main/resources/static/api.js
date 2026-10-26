@@ -1,5 +1,5 @@
 const LIVE_BACKEND_URL =
-    "https://YOUR-ACTUAL-BACKEND.onrender.com";
+    "https://grocerymate-backend.onrender.com";
 
 const IS_LOCAL =
     window.location.hostname === "localhost" ||
