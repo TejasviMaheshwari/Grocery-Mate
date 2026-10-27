@@ -21,6 +21,7 @@
 
 ---
 
+
 ## 📌 Table of Contents
 
 - [Overview](#-overview)
@@ -111,7 +112,12 @@ GroceryMate provides a centralized platform that helps customers stay organized 
 
 ---
 
-## Screenshots
+- **Live website:** https://grocery-mate-eight.vercel.app/
+- **Backend service:** https://grocerymate-backend.onrender.com
+- **Database console:** [GroceryMate database on TiDB Cloud]([https://tidbcloud.com/tidbs/10945827419452629098/overview?orgId=1372813089209377949](https://tidbcloud.com/tidbs/10945827419452629098/overview?orgId=1372813089209377949)
+
+---
+## application-screenshots
 
 The following gallery embeds screenshots stored in the repository's `website preview shot` folder. GitHub renders these images directly in this README when the paths match the filenames in that folder.
 
