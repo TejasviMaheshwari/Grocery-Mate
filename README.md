@@ -112,8 +112,8 @@ GroceryMate provides a centralized platform that helps customers stay organized 
 
 ---
 
-- **Live website:** (#-https://grocery-mate-eight.vercel.app/)
-- **Backend service:** (#-https://grocerymate-backend.onrender.com)
+- **Live website:** (https://grocery-mate-eight.vercel.app/)
+- **Backend service:** (https://grocerymate-backend.onrender.com)
 - **Database console:** [GroceryMate database on TiDB Cloud]([https://tidbcloud.com/tidbs/10945827419452629098/overview?orgId=1372813089209377949]
 
 ---
